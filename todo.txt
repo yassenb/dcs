@@ -1,0 +1,5 @@
+client automatic discovery
+scheduling tasks on different hosts
+error handling
+
+think about class loading problem (for now put every new jar in a separate folder on the server)

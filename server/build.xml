@@ -1,0 +1,19 @@
+<!DOCTYPE project [<!ENTITY common SYSTEM "../common.xml">]>
+
+<project name="server" default="pack" basedir=".">
+    &common;
+    
+    <target name="pack" depends="redist">
+        <mkdir dir="${redist}"/>
+        <!-- TODO make run.sh part of the installation process -->
+        <copy todir="${redist}">
+            <fileset dir="." includes="run.sh,server.policy"/>
+        </copy>
+        <chmod file="${redist}/run.sh" perm="+x"/>
+    </target>
+
+    <target name="redist">
+        <ant dir="dcs/executor" target="redist"/>
+        <ant dir="dcs/service" target="redist"/>
+    </target>
+</project>

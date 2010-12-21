@@ -1,0 +1,12 @@
+<property name="build" location="build"/>
+<property name="redist" location="redist"/>
+
+<target name="init">
+    <mkdir dir="${build}"/>
+    <mkdir dir="${redist}/lib"/>
+</target>
+
+<target name="clean">
+    <delete dir="${build}"/>
+    <delete dir="${redist}"/>
+</target>

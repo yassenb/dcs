@@ -1,0 +1,22 @@
+<!DOCTYPE project [<!ENTITY common SYSTEM "../common.xml">]>
+
+<project name="test-client" default="redist" basedir=".">
+    &common;
+
+    <target name="compile" depends="init">
+        <javac srcdir="." destdir="${build}">
+            <classpath>
+                <pathelement location="../client/redist/lib/client.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="redist" depends="compile">
+        <jar jarfile="${redist}/lib/test-client.jar" basedir="${build}">
+            <zipfileset src="../client/redist/lib/client.jar" excludes="META-INF/*" /> 
+            <manifest>
+                <attribute name="Main-Class" value="IntGenerator"/>
+            </manifest>
+        </jar>
+    </target>
+</project>

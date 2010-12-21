@@ -1,0 +1,20 @@
+<!DOCTYPE project [<!ENTITY common SYSTEM "../../../common.xml">]>
+
+<project name="client" default="redist" basedir=".">
+    &common;
+
+    <target name="compile" depends="init">
+        <javac srcdir="." destdir="${build}">
+            <classpath>
+                <pathelement location="../../../server/redist/lib/executor.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="redist" depends="compile">
+        <jar jarfile="${redist}/lib/client.jar" basedir="${build}"/>
+        <jar jarfile="${redist}/lib/client.jar" basedir="../.." includes="**/RemoteComputer.java" update="true"/>
+        <jar jarfile="${redist}/lib/client.jar" basedir="../../../server/build" update="true"/>
+        <jar jarfile="${redist}/lib/client.jar" basedir="../../../server" includes="**/Task.java" update="true"/>
+    </target>
+</project>

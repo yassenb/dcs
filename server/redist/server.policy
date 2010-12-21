@@ -1,0 +1,3 @@
+grant codeBase "file:./lib/service.jar" {
+    permission java.security.AllPermission;
+};

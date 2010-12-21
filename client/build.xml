@@ -1,0 +1,9 @@
+<!DOCTYPE project [<!ENTITY common SYSTEM "../common.xml">]>
+    
+<project name="client" default="redist" basedir=".">
+    &common;
+
+    <target name="redist">
+        <ant dir="dcs/client" target="redist"/>
+    </target>
+</project>
