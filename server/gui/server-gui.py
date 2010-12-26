@@ -41,6 +41,8 @@ class MainFrame(wx.Frame):
         self.__tbicon.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.__on_tbicon_click)
         self.__hidden = False
 
+        self.Show(True)
+
         panel = wx.Panel(self)
 
         master_ip_static_text = wx.StaticText(panel, label="Master Node IP address:")
@@ -74,8 +76,6 @@ class MainFrame(wx.Frame):
 
         panel.SetSizer(sizer)
         sizer.Fit(self)
-
-        self.Show(True)
 
     def __on_register(self, event):
         self.__master_ip_text_ctrl.GetValidator().Validate()
