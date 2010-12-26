@@ -8,14 +8,17 @@ import urllib
 import ConfigParser
 import os
 import re
+import threading
+import time
+import subprocess
 
-class IPValidator(wx.PyValidator):
+class AddressValidator(wx.PyValidator):
     def __init__(self, allow_hostname):
         wx.PyValidator.__init__(self)
         self.__allow_hostname = allow_hostname
 
     def Clone(self):
-        return IPValidator(self.__allow_hostname)
+        return AddressValidator(self.__allow_hostname)
 
     def Validate(self):
         text_ctrl = self.GetWindow()
@@ -24,11 +27,11 @@ class IPValidator(wx.PyValidator):
             address = text_ctrl.GetValue()
             socket.inet_aton(address)
         except socket.error:
-            if not (self.__allow_hostname and IPValidator.__is_valid_hostname(address)):
+            if not (self.__allow_hostname and AddressValidator.__is_valid_hostname(address)):
                 error_msg = "Please enter a valid IP adddress"
                 if self.__allow_hostname:
                     error_msg += " or hostname"
-                wx.MessageBox(error_msg, "Error")
+                wx.MessageBox(error_msg, "Error", style=wx.OK | wx.ICON_ERROR)
 
                 text_ctrl.SetBackgroundColour("pink")
                 text_ctrl.SetFocus()
@@ -53,30 +56,36 @@ class MainFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, title="DCS")
 
+        self.set_status("offline")
         self.__base_path = os.path.dirname(__file__) + "/"
-        master_ip, bind_ip, self.__registered = self.__read_config()
+        self.__master_ip, self.__bind_ip, self.registered = self.__read_config()
 
-        self.Bind(wx.EVT_CLOSE, self.__save_config)
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
 
         self.__tbicon = wx.TaskBarIcon()
-        self.__tbicon.SetIcon(wx.Icon(self.__get_icon_name(), wx.BITMAP_TYPE_PNG), self.__get_tooltip())
         self.__tbicon.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.__on_tbicon_click)
+        self.refresh_tbicon()
 
-        self.Show(not self.__registered)
-
+        self.Show(not self.registered)
+        
         panel = wx.Panel(self)
 
         master_ip_static_text = wx.StaticText(panel, label="Master Node IP address or hostname:")
-        self.__master_ip_text_ctrl = wx.TextCtrl(panel, size=(250, 25), validator=IPValidator(True))
+        self.__master_ip_text_ctrl = wx.TextCtrl(panel, size=(250, 25), validator=AddressValidator(True))
         bind_ip_static_text = wx.StaticText(panel, label="IP address to bind to (optional):")
-        self.__bind_ip_text_ctrl = wx.TextCtrl(panel, size=(120, 25), validator=IPValidator(False))
+        self.__bind_ip_text_ctrl = wx.TextCtrl(panel, size=(120, 25), validator=AddressValidator(False))
 
-        self.__master_ip_text_ctrl.SetValue(master_ip or "")
-        self.__bind_ip_text_ctrl.SetValue(bind_ip or "")
+        self.__master_ip_text_ctrl.SetValue(self.__master_ip or "")
+        self.__bind_ip_text_ctrl.SetValue(self.__bind_ip or "")
+
+        self.__monitor = MonitorThread(self)
+        self.__monitor.start()
 
         register_button = wx.Button(panel, label="Register")
         register_button.SetDefault()
         register_button.Bind(wx.EVT_BUTTON, self.__on_register)
+        
+        self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
 
         # layout starts here
 
@@ -97,44 +106,74 @@ class MainFrame(wx.Frame):
         panel.SetSizer(sizer)
         sizer.Fit(self)
 
-    def __on_register(self, event):
-        self.__registered = False
-        if not self.__master_ip_text_ctrl.GetValidator().Validate() or \
-           (self.__bind_ip_text_ctrl.GetValue() != "" and not self.__bind_ip_text_ctrl.GetValidator().Validate()):
-               return
-        if not self.__act_on_client({"action": "register"}):
-            wx.MessageBox("Problem registering with given Master Node", "Error")
-        else:
-            self.__registered = True
-            wx.MessageBox("Successfully registered with Master Node")
+    def refresh_tbicon(self):
+        self.__tbicon.SetIcon(wx.Icon(self.__get_icon_name(), wx.BITMAP_TYPE_PNG), self.__get_tooltip())
 
-    def __act_on_client(self, params):
-        master_ip = self.__master_ip_text_ctrl.GetValue()
-        bind_ip = self.__bind_ip_text_ctrl.GetValue()
-        if bind_ip:
-            conn = httplib.HTTPConnection(master_ip, source_address=bind_ip)
+    def act_on_client(self, params):
+        if self.__bind_ip:
+            conn = httplib.HTTPConnection(self.__master_ip, source_address=self.__bind_ip)
         else:
-            conn = httplib.HTTPConnection(master_ip)
+            conn = httplib.HTTPConnection(self.__master_ip)
 
         params = urllib.urlencode(params)
         try:
             conn.request("GET", "/cgi-bin/action.py?" + params)
             response = conn.getresponse()
-            conn.close()
-            return response.status == 200
+            if response.status == 200:
+                return response.read()
+            else:
+                return False
         except:
             return False
+        finally:
+            conn.close()
+
+    def set_status(self, status):
+        self.__online = False
+        if status == "online":
+            self.__online = True
+        elif status == "offline":
+            pass
+
+    def __on_register(self, event):
+        self.registered = False
+        if not self.__master_ip_text_ctrl.GetValidator().Validate() or \
+           (self.__bind_ip_text_ctrl.GetValue() != "" and not self.__bind_ip_text_ctrl.GetValidator().Validate()):
+               return
+        try:
+            self.act_on_client({"action": "register"})
+            self.registered = True
+            self.__master_ip = self.__master_ip_text_ctrl.GetValue()
+            self.__bind_ip = self.__bind_ip_text_ctrl.GetValue()
+            wx.MessageBox("Successfully registered with Master Node")
+        except:
+            wx.MessageBox("Problem registering with given Master Node", "Error", style=wx.OK | wx.ICON_ERROR)
 
     def __get_icon_name(self):
-        suffix = ""
+        if self.__online and self.registered:
+            name = "network-idle"
+        else:
+            name = "network-offline"
+
         if "wxMSW" in wx.PlatformInfo:
             suffix = "-16x16"
         elif "wxGTK" in wx.PlatformInfo:
             suffix = "-22x22"
-        return self.__base_path + "icons/" + "network-idle" + suffix + ".png"
+
+        return self.__base_path + "icons/" + name + suffix + ".png"
 
     def __get_tooltip(self):
-        return "not connected"
+        if self.registered:
+            tt = "registered"
+            tt += " and "
+            if self.__online:
+                tt += "online"
+            else:
+                tt += "offline"
+        else:
+            tt = "not registered"
+
+        return tt
 
     __CONFIG_FILE_NAME = "dcs.cfg"
     __IPS_SECTION = "IPs"
@@ -152,20 +191,50 @@ class MainFrame(wx.Frame):
         except ConfigParser.Error:
             return (None, None, None)
 
-    def __save_config(self, event):
+    def __on_close(self, event):
+        self.__save_config()
+        self.__rmi_registry_process.kill()
+        event.Skip()
+
+    def __save_config(self):
         config = ConfigParser.SafeConfigParser()
         config.add_section(self.__IPS_SECTION)
-        config.set(self.__IPS_SECTION, self.__MASTER_IP, self.__master_ip_text_ctrl.GetValue())
-        config.set(self.__IPS_SECTION, self.__BIND_IP, self.__bind_ip_text_ctrl.GetValue())
-        config.set(self.__IPS_SECTION, self.__REGISTERED, str(self.__registered))
+        config.set(self.__IPS_SECTION, self.__MASTER_IP, self.__master_ip)
+        config.set(self.__IPS_SECTION, self.__BIND_IP, self.__bind_ip)
+        config.set(self.__IPS_SECTION, self.__REGISTERED, str(self.registered))
 
         with open(self.__base_path + self.__CONFIG_FILE_NAME, "wb") as configfile:
             config.write(configfile)
 
-        event.Skip()
-
     def __on_tbicon_click(self, event):
         self.Show(not self.IsShown())
+
+# TODO fix monitoree.registered multi-threaded access
+class MonitorThread(threading.Thread):
+    def __init__(self, monitoree):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.__monitoree = monitoree
+
+    def run(self):
+        while True:
+            offline = False
+            if self.__monitoree.registered:
+                try:
+                    if self.__monitoree.act_on_client({"action": "check"}).strip() != "OK":
+                        self.__monitoree.registered = False
+                except:
+                    offline = True
+
+            if offline or not self.__monitoree.registered:
+                self.__monitoree.set_status("offline")
+            else:
+                self.__monitoree.set_status("online")
+
+            self.__monitoree.refresh_tbicon()
+
+            time.sleep(30)
+
 
 app = wx.App()
 MainFrame()
