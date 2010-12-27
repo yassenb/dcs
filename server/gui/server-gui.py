@@ -52,21 +52,28 @@ class AddressValidator(wx.PyValidator):
         allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
         return all(allowed.match(x) for x in hostname.split("."))
 
+
 class MainFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, title="DCS")
 
-        self.set_status("offline")
-        self.__base_path = os.path.dirname(__file__) + "/"
-        self.__master_ip, self.__bind_ip, self.registered = self.__read_config()
-
         self.Bind(wx.EVT_CLOSE, self.__on_close)
+
+        self.__base_path = os.path.dirname(__file__) + "/"
+
+        self.__configuration = Configuration()
+        self.__process_manager = ProcessManager()
+        self.__state_manager = StateManager(self.__process_manager,
+                                            self.__refresh_tbicon,
+                                            self.__configuration.get_master_ip(),
+                                            self.__configuration.get_bind_ip(),
+                                            self.__configuration.get_registered())
 
         self.__tbicon = wx.TaskBarIcon()
         self.__tbicon.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.__on_tbicon_click)
-        self.refresh_tbicon()
+        self.__refresh_tbicon()
 
-        self.Show(not self.registered)
+        self.Show(not self.__state_manager.get_registered())
         
         panel = wx.Panel(self)
 
@@ -75,17 +82,12 @@ class MainFrame(wx.Frame):
         bind_ip_static_text = wx.StaticText(panel, label="IP address to bind to (optional):")
         self.__bind_ip_text_ctrl = wx.TextCtrl(panel, size=(120, 25), validator=AddressValidator(False))
 
-        self.__master_ip_text_ctrl.SetValue(self.__master_ip or "")
-        self.__bind_ip_text_ctrl.SetValue(self.__bind_ip or "")
-
-        self.__monitor = MonitorThread(self)
-        self.__monitor.start()
+        self.__master_ip_text_ctrl.SetValue(self.__state_manager.get_master_ip() or "")
+        self.__bind_ip_text_ctrl.SetValue(self.__state_manager.get_bind_ip() or "")
 
         register_button = wx.Button(panel, label="Register")
         register_button.SetDefault()
         register_button.Bind(wx.EVT_BUTTON, self.__on_register)
-        
-        self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
 
         # layout starts here
 
@@ -106,51 +108,23 @@ class MainFrame(wx.Frame):
         panel.SetSizer(sizer)
         sizer.Fit(self)
 
-    def refresh_tbicon(self):
+    def __refresh_tbicon(self):
         self.__tbicon.SetIcon(wx.Icon(self.__get_icon_name(), wx.BITMAP_TYPE_PNG), self.__get_tooltip())
 
-    def act_on_client(self, params):
-        if self.__bind_ip:
-            conn = httplib.HTTPConnection(self.__master_ip, source_address=self.__bind_ip)
-        else:
-            conn = httplib.HTTPConnection(self.__master_ip)
-
-        params = urllib.urlencode(params)
-        try:
-            conn.request("GET", "/cgi-bin/action.py?" + params)
-            response = conn.getresponse()
-            if response.status == 200:
-                return response.read()
-            else:
-                return False
-        except:
-            return False
-        finally:
-            conn.close()
-
-    def set_status(self, status):
-        self.__online = False
-        if status == "online":
-            self.__online = True
-        elif status == "offline":
-            pass
-
     def __on_register(self, event):
-        self.registered = False
         if not self.__master_ip_text_ctrl.GetValidator().Validate() or \
            (self.__bind_ip_text_ctrl.GetValue() != "" and not self.__bind_ip_text_ctrl.GetValidator().Validate()):
                return
         try:
-            self.act_on_client({"action": "register"})
-            self.registered = True
-            self.__master_ip = self.__master_ip_text_ctrl.GetValue()
-            self.__bind_ip = self.__bind_ip_text_ctrl.GetValue()
+            self.__state_manager.register(self.__master_ip_text_ctrl.GetValue(), self.__bind_ip_text_ctrl.GetValue())
             wx.MessageBox("Successfully registered with Master Node")
         except:
             wx.MessageBox("Problem registering with given Master Node", "Error", style=wx.OK | wx.ICON_ERROR)
 
+        self.__refresh_tbicon()
+
     def __get_icon_name(self):
-        if self.__online and self.registered:
+        if self.__state_manager.get_registered() and self.__state_manager.get_online():
             name = "network-idle"
         else:
             name = "network-offline"
@@ -163,10 +137,10 @@ class MainFrame(wx.Frame):
         return self.__base_path + "icons/" + name + suffix + ".png"
 
     def __get_tooltip(self):
-        if self.registered:
+        if self.__state_manager.get_registered():
             tt = "registered"
             tt += " and "
-            if self.__online:
+            if self.__state_manager.get_online():
                 tt += "online"
             else:
                 tt += "offline"
@@ -175,65 +149,141 @@ class MainFrame(wx.Frame):
 
         return tt
 
-    __CONFIG_FILE_NAME = "dcs.cfg"
-    __IPS_SECTION = "IPs"
-    __MASTER_IP = "Master Node IP"
-    __BIND_IP = "IP to bind to"
-    __REGISTERED = "Successfully registered"
-    def __read_config(self):
-        config = ConfigParser.SafeConfigParser()
-        try:
-            config.read(self.__base_path + self.__CONFIG_FILE_NAME)
-            master_ip = config.get(self.__IPS_SECTION, self.__MASTER_IP)
-            bind_ip = config.get(self.__IPS_SECTION, self.__BIND_IP)
-            registered = config.getboolean(self.__IPS_SECTION, self.__REGISTERED)
-            return (master_ip, bind_ip, registered)
-        except ConfigParser.Error:
-            return (None, None, None)
-
     def __on_close(self, event):
-        self.__save_config()
-        self.__rmi_registry_process.kill()
+        self.__configuration.save(self.__state_manager.get_master_ip(),
+                                  self.__state_manager.get_bind_ip(),
+                                  self.__state_manager.get_registered())
+        self.__process_manager.end()
         event.Skip()
-
-    def __save_config(self):
-        config = ConfigParser.SafeConfigParser()
-        config.add_section(self.__IPS_SECTION)
-        config.set(self.__IPS_SECTION, self.__MASTER_IP, self.__master_ip)
-        config.set(self.__IPS_SECTION, self.__BIND_IP, self.__bind_ip)
-        config.set(self.__IPS_SECTION, self.__REGISTERED, str(self.registered))
-
-        with open(self.__base_path + self.__CONFIG_FILE_NAME, "wb") as configfile:
-            config.write(configfile)
 
     def __on_tbicon_click(self, event):
         self.Show(not self.IsShown())
 
-# TODO fix monitoree.registered multi-threaded access
-class MonitorThread(threading.Thread):
-    def __init__(self, monitoree):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.__monitoree = monitoree
 
-    def run(self):
-        while True:
-            offline = False
-            if self.__monitoree.registered:
-                try:
-                    if self.__monitoree.act_on_client({"action": "check"}).strip() != "OK":
-                        self.__monitoree.registered = False
-                except:
-                    offline = True
+class ProcessManager:
+    def __init__(self):
+        # TODO maybe fix for win users if they don't have it in path
+        self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
 
-            if offline or not self.__monitoree.registered:
-                self.__monitoree.set_status("offline")
+    def end(self):
+        self.__rmi_registry_process.kill()
+
+
+class StateManager:
+    # TODO fix monitoree.registered multi-threaded access
+    class __MonitorThread(threading.Thread):
+        def __init__(self, monitoree):
+            threading.Thread.__init__(self)
+            self.daemon = True
+            self.__monitoree = monitoree
+
+        def run(self):
+            while True:
+                if self.__monitoree.get_registered():
+                    self.__monitoree.check_status()
+                time.sleep(5)
+
+    def __init__(self, process_manager, status_changed_callback, master_ip, bind_ip, registered):
+        self.__process_manager = process_manager
+        self.__status_changed_callback = status_changed_callback
+        self.__online = False
+        self.__master_ip = master_ip
+        self.__bind_ip = bind_ip
+        self.__registered = registered
+        self.__MonitorThread(self).start()
+
+    def get_master_ip(self):
+        return self.__master_ip
+
+    def get_bind_ip(self):
+        return self.__bind_ip
+
+    def get_registered(self):
+        return self.__registered
+
+    def get_online(self):
+        return self.__online
+
+    def check_status(self):
+        try:
+            status = self.__act_on_client({"action": "check"}).strip()
+            self.__online = True
+            if status != "OK":
+                self.__registered = False
+        except:
+            self.__online = False
+
+        self.__status_changed_callback()
+
+    def register(self, master_ip, bind_ip):
+        self.__master_ip = master_ip
+        self.__bind_ip = bind_ip
+        self.__registered = False
+        self.__act_on_client({"action": "register"})
+        self.__registered = True
+
+    def __act_on_client(self, params):
+        if self.__bind_ip:
+            conn = httplib.HTTPConnection(self.__master_ip, source_address=self.__bind_ip)
+        else:
+            conn = httplib.HTTPConnection(self.__master_ip)
+
+        params = urllib.urlencode(params)
+        try:
+            conn.request("GET", "/cgi-bin/action.py?" + params)
+            response = conn.getresponse()
+            if response.status == 200:
+                return response.read()
             else:
-                self.__monitoree.set_status("online")
+                raise IOError("error from server")
+        finally:
+            conn.close()
 
-            self.__monitoree.refresh_tbicon()
 
-            time.sleep(30)
+class Configuration:
+    __CONFIG_FILE_NAME = "dcs.cfg"
+    __IPS_SECTION = "IPs"
+    __STATUS_SECTION = "status"
+    __MASTER_IP = "Master Node IP"
+    __BIND_IP = "IP to bind to"
+    __REGISTERED = "Successfully registered"
+
+    def __init__(self):
+        self.__base_path = os.path.dirname(__file__) + "/"
+        self.__read()
+
+    def __read(self):
+        self.__master_ip, self.__bind_ip, self.__registered = None, None, None
+        file = self.__base_path + self.__CONFIG_FILE_NAME
+        if os.path.isfile(file):
+            config = ConfigParser.SafeConfigParser()
+            try:
+                config.read(file)
+                self.__master_ip = config.get(self.__IPS_SECTION, self.__MASTER_IP)
+                self.__bind_ip = config.get(self.__IPS_SECTION, self.__BIND_IP)
+                self.__registered = config.getboolean(self.__STATUS_SECTION, self.__REGISTERED)
+            except ConfigParser.Error:
+                pass
+
+    def get_master_ip(self):
+        return self.__master_ip
+
+    def get_bind_ip(self):
+        return self.__bind_ip
+
+    def get_registered(self):
+        return self.__registered
+
+    def save(self, master_ip, bind_ip, registered):
+        config = ConfigParser.SafeConfigParser()
+        config.add_section(self.__IPS_SECTION)
+        config.set(self.__IPS_SECTION, self.__MASTER_IP, master_ip or self.__master_ip or "")
+        config.set(self.__IPS_SECTION, self.__BIND_IP, bind_ip or self.__bind_ip or "")
+        config.add_section(self.__STATUS_SECTION)
+        config.set(self.__STATUS_SECTION, self.__REGISTERED, str(registered or "False"))
+
+        with open(self.__base_path + self.__CONFIG_FILE_NAME, "wb") as configfile:
+            config.write(configfile)
 
 
 app = wx.App()
