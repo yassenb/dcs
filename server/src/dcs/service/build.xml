@@ -1,0 +1,13 @@
+<project name="service" default="redist" basedir=".">  
+    <target name="compile">
+        <javac srcdir="${src_dir}" destdir="${base_dir}/build"/>
+    </target>
+    
+    <target name="redist" depends="compile">     
+        <jar jarfile="${base_dir}/redist/lib/service.jar" basedir="${base_dir}/build">
+            <manifest>
+                <attribute name="Main-Class" value="dcs.service.ComputingService"/>
+            </manifest>
+        </jar>
+    </target>
+</project>

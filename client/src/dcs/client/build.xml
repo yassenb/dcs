@@ -1,0 +1,18 @@
+<project name="client" default="redist" basedir=".">
+    <target name="compile">
+        <javac srcdir="." destdir="${base_dir}/build">
+            <classpath>
+                <pathelement location="${base_dir}/../server/redist/lib/executor.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="redist" depends="compile">
+        <jar jarfile="${base_dir}/redist/lib/client.jar" basedir="${base_dir}/build"/>
+        <jar jarfile="${base_dir}/redist/lib/client.jar" basedir="../.." includes="**/RemoteComputer.java"
+             update="true"/>
+        <jar jarfile="${base_dir}/redist/lib/client.jar" basedir="${base_dir}/../server/build" update="true"/>
+        <jar jarfile="${base_dir}/redist/lib/client.jar" basedir="${base_dir}/../server/src" includes="**/Task.java"
+             update="true"/>
+    </target>
+</project>

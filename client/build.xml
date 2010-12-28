@@ -3,7 +3,7 @@
 <project name="client" default="redist" basedir=".">
     &common;
 
-    <target name="redist">
-        <ant dir="dcs/client" target="redist"/>
+    <target name="redist" depends="init">
+        <ant dir="${src_dir}/dcs/client" target="redist"/>
     </target>
 </project>
