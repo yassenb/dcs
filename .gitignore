@@ -8,3 +8,4 @@ test-client/build/
 server/gui/dcs.cfg
 server/redist/lib/*
 client/redist/lib/*
+test-client/redist/lib/*
