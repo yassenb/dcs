@@ -1,6 +1,7 @@
 <!DOCTYPE project [<!ENTITY common SYSTEM "../common.xml">]>
 
 <project name="server" default="pack" basedir=".">
+    <property file="../build.properties"/>
     &common;
     
     <target name="pack" depends="redist">
@@ -10,7 +11,25 @@
     </target>
 
     <target name="redist" depends="init">
-        <ant dir="${src_dir}/dcs/executor" target="redist"/>
-        <ant dir="${src_dir}/dcs/service" target="redist"/>
+        <ant dir="${src.dir}/dcs/executor" target="redist"/>
+        <ant dir="${src.dir}/dcs/service" target="redist"/>
+    </target>
+    
+    <target name="test-compile" depends="redist">
+        <ant dir="${test.src.dir}/dcs/service" target="compile"/>
+    </target>
+    
+    <target name="test" depends="test-compile">
+        <junit haltonfailure="yes">
+            <classpath>
+                <pathelement location="${junit.jar}"/>
+                <pathelement location="redist/lib/service.jar"/>
+            </classpath>
+            <batchtest>
+                <fileset dir="${test.src.dir}">
+                    <include name="**/*Test.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
     </target>
 </project>

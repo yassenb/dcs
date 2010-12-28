@@ -1,10 +1,10 @@
 <project name="executor" default="redist" basedir=".">
     <target name="compile">
-        <javac srcdir="${src_dir}" destdir="${base_dir}/build"/>
+        <javac srcdir="." destdir="${base.dir}/build"/>
     </target>
 
     <target name="redist" depends="compile">
-        <jar jarfile="${base_dir}/redist/lib/executor.jar" basedir="${base_dir}/build"
+        <jar jarfile="${base.dir}/redist/lib/executor.jar" basedir="${base.dir}/build"
              includes="dcs/executor/**"/>
     </target>
 </project>

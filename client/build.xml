@@ -1,9 +1,10 @@
 <!DOCTYPE project [<!ENTITY common SYSTEM "../common.xml">]>
     
 <project name="client" default="redist" basedir=".">
+    <property file="../build.properties"/>
     &common;
 
     <target name="redist" depends="init">
-        <ant dir="${src_dir}/dcs/client" target="redist"/>
+        <ant dir="${src.dir}/dcs/client" target="redist"/>
     </target>
 </project>

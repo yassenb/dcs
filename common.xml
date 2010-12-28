@@ -1,5 +1,6 @@
-<property name="base_dir" location="."/>
-<property name="src_dir" location="./src"/>
+<property name="base.dir" location="."/>
+<property name="src.dir" location="./src"/>
+<property name="test.src.dir" location="./test"/>
 
 <target name="init">
     <mkdir dir="build"/>
