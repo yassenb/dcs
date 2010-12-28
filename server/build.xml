@@ -23,13 +23,17 @@
         <junit haltonfailure="yes">
             <classpath>
                 <pathelement location="${junit.jar}"/>
+                <pathelement location="${mockito.jar}"/>
                 <pathelement location="redist/lib/service.jar"/>
+                <pathelement location="build"/>
             </classpath>
             <batchtest>
                 <fileset dir="${test.src.dir}">
                     <include name="**/*Test.java"/>
                 </fileset>
             </batchtest>
+            <!-- bug in ant 1.7.1 - for some reason brief doesn't work-->
+            <formatter type="brief" usefile="false"/>
         </junit>
     </target>
 </project>
