@@ -4,7 +4,7 @@
     &common;
 
     <target name="compile" depends="init">
-        <javac srcdir="." destdir="build">
+        <javac srcdir="src" destdir="build">
             <classpath>
                 <pathelement location="../client/redist/lib/client.jar"/>
             </classpath>
