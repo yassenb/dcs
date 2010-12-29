@@ -6,6 +6,8 @@ server/build/
 smli_tr-2006-149.pdf
 test-client/build/
 server/gui/dcs.cfg
-server/redist/lib/*
-client/redist/lib/*
-test-client/redist/lib/*
+server/redist
+client/redist
+test-client/redist
+junit4.8.2
+mockito-1.8.5

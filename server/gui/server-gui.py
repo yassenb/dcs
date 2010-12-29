@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding=utf-8
 
 import wx
 import socket
@@ -11,6 +10,8 @@ import re
 import threading
 import time
 import subprocess
+import threading
+import socket
 
 class AddressValidator(wx.PyValidator):
     def __init__(self, allow_hostname):
@@ -63,8 +64,8 @@ class MainFrame(wx.Frame):
 
         self.__configuration = Configuration()
         self.__process_manager = ProcessManager()
-        self.__state_manager = StateManager(self.__process_manager,
-                                            self.__refresh_tbicon,
+        self.__state_manager = StateManager(self.__refresh_tbicon,
+                                            self.__process_manager,
                                             self.__configuration.get_master_ip(),
                                             self.__configuration.get_bind_ip(),
                                             self.__configuration.get_registered())
@@ -162,15 +163,33 @@ class MainFrame(wx.Frame):
 
 class ProcessManager:
     def __init__(self):
-        # TODO maybe fix for win users if they don't have it in path
-        self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
+        self.__rmi_registry_process, self.__service_process = None, None
+
+    def spawn_processes(self, ip):
+        if not self.__rmi_registry_process or self.__rmi_registry_process.poll() != None:
+            # TODO maybe fix for win users if they don't have it in path
+            self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
+
+        if not self.__service_process or self.__service_process.poll() != None:
+            curdir = os.path.dirname(__file__)
+            self.__service_process = subprocess.Popen(
+                ["java",
+                 "-Djava.rmi.server.hostname={0}".format(ip),
+                 "-Djava.rmi.server.codebase=file:{0}/lib/executor.jar".format(os.path.abspath(curdir)),
+                 "-Djava.security.policy=server.policy",
+                 "-jar",
+                 "lib/service.jar"],
+                cwd=curdir)
 
     def end(self):
-        self.__rmi_registry_process.kill()
+        if self.__rmi_registry_process:
+            self.__rmi_registry_process.kill()
+        if self.__service_process:
+            self.__service_process.kill()
 
 
 class StateManager:
-    # TODO fix monitoree.registered multi-threaded access
+    # TODO fix multi-threaded access
     class __MonitorThread(threading.Thread):
         def __init__(self, monitoree):
             threading.Thread.__init__(self)
@@ -179,13 +198,15 @@ class StateManager:
 
         def run(self):
             while True:
-                if self.__monitoree.get_registered():
-                    self.__monitoree.check_status()
+                if self.__monitoree.get_registered() and self.__monitoree.check_status():
+                    self.__monitoree.spawn_processes()
+                # TODO change
                 time.sleep(5)
 
-    def __init__(self, process_manager, status_changed_callback, master_ip, bind_ip, registered):
-        self.__process_manager = process_manager
+    def __init__(self, status_changed_callback, process_manager, master_ip, bind_ip, registered):
         self.__status_changed_callback = status_changed_callback
+        self.__process_manager = process_manager
+        self.__ip = None
         self.__online = False
         self.__master_ip = master_ip
         self.__bind_ip = bind_ip
@@ -207,18 +228,39 @@ class StateManager:
     def check_status(self):
         try:
             status = self.__act_on_client({"action": "check"}).strip()
+            self.__registered = True
+            self.__ip = self.__act_on_client({"action": "getmyip"}).strip()
             self.__online = True
             if status != "OK":
                 self.__registered = False
         except:
+            self.__registered = False
             self.__online = False
 
         self.__status_changed_callback()
+        return self.__registered and self.__online
+
+    def spawn_processes(self):
+        self.__process_manager.spawn_processes(self.__ip)
 
     def register(self, master_ip, bind_ip):
+        # the processes will be respawned on the next status check
+        self.__process_manager.end()
+        self.__registered = False
+
         self.__master_ip = master_ip
         self.__bind_ip = bind_ip
-        self.__registered = False
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            # TODO fix hard-coded port
+            try:
+                s.bind((self.__act_on_client({"action": "getmyip"}).strip(), 55555))
+            except Exception as e:
+                print(e)
+        finally:
+            s.close()
+
         self.__act_on_client({"action": "register"})
         self.__registered = True
 

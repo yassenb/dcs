@@ -7,7 +7,9 @@
     <target name="pack" depends="redist">
         <copy todir="redist">
             <fileset dir="." includes="server.policy"/>
+            <fileset dir="gui"/>
         </copy>
+        <chmod file="redist/server-gui.py" perm="+x"/>
     </target>
 
     <target name="redist" depends="init">
