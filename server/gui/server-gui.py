@@ -237,7 +237,7 @@ class StateManager:
             self.__registered = False
             self.__online = False
 
-        self.__status_changed_callback()
+        wx.CallAfter(self.__status_changed_callback)
         return self.__registered and self.__online
 
     def spawn_processes(self):
