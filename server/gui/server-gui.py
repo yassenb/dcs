@@ -12,6 +12,7 @@ import time
 import subprocess
 import threading
 import socket
+import sys
 
 class AddressValidator(wx.PyValidator):
     def __init__(self, allow_hostname):
@@ -59,8 +60,6 @@ class MainFrame(wx.Frame):
         wx.Frame.__init__(self, None, title="DCS")
 
         self.Bind(wx.EVT_CLOSE, self.__on_close)
-
-        self.__base_path = os.path.dirname(__file__) + "/"
 
         self.__configuration = Configuration()
         self.__process_manager = ProcessManager()
@@ -135,7 +134,7 @@ class MainFrame(wx.Frame):
         elif "wxGTK" in wx.PlatformInfo:
             suffix = "-22x22"
 
-        return self.__base_path + "icons/" + name + suffix + ".png"
+        return Configuration.get_base_path() + "/" + "icons/" + name + suffix + ".png"
 
     def __get_tooltip(self):
         if self.__state_manager.get_registered():
@@ -155,6 +154,7 @@ class MainFrame(wx.Frame):
                                   self.__state_manager.get_bind_ip(),
                                   self.__state_manager.get_registered())
         self.__process_manager.end()
+        self.__tbicon.RemoveIcon()
         event.Skip()
 
     def __on_tbicon_click(self, event):
@@ -171,7 +171,7 @@ class ProcessManager:
             self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
 
         if not self.__service_process or self.__service_process.poll() != None:
-            curdir = os.path.dirname(__file__)
+            curdir = Configuration.get_base_path()
             self.__service_process = subprocess.Popen(
                 ["java",
                  "-Djava.rmi.server.hostname={0}".format(ip),
@@ -291,12 +291,11 @@ class Configuration:
     __REGISTERED = "Successfully registered"
 
     def __init__(self):
-        self.__base_path = os.path.dirname(__file__) + "/"
         self.__read()
 
     def __read(self):
         self.__master_ip, self.__bind_ip, self.__registered = None, None, None
-        file = self.__base_path + self.__CONFIG_FILE_NAME
+        file = self.get_base_path() + "/" + self.__CONFIG_FILE_NAME
         if os.path.isfile(file):
             config = ConfigParser.SafeConfigParser()
             try:
@@ -324,8 +323,12 @@ class Configuration:
         config.add_section(self.__STATUS_SECTION)
         config.set(self.__STATUS_SECTION, self.__REGISTERED, str(registered or "False"))
 
-        with open(self.__base_path + self.__CONFIG_FILE_NAME, "wb") as configfile:
+        with open(self.get_base_path() + "/" + self.__CONFIG_FILE_NAME, "wb") as configfile:
             config.write(configfile)
+
+    @classmethod
+    def get_base_path(cls):
+        return os.path.dirname(sys.argv[0])
 
 
 app = wx.App()

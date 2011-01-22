@@ -1,11 +1,10 @@
 *.swp
-client/build/
-client/cgi/
 sandbox/
-server/build/
 smli_tr-2006-149.pdf
+client/cgi/
+client/build/
+server/build/
 test-client/build/
-server/gui/dcs.cfg
 server/redist
 client/redist
 test-client/redist

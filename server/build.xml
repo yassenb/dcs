@@ -38,4 +38,17 @@
             <formatter type="brief" usefile="false"/>
         </junit>
     </target>
+
+    <target name="bbfreeze" depends="pack">
+        <exec executable="bb-freeze">
+            <arg value="./redist/server-gui.py"/>
+        </exec>
+        <delete file="./dist/py"/>
+        <copy todir="./dist">
+            <fileset dir="redist" excludes="standalone/ server-gui.py"/>
+        </copy>
+        <move todir="./redist/standalone">
+            <fileset dir="./dist"/>
+        </move>
+    </target>
 </project>
