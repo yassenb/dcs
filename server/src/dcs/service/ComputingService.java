@@ -9,7 +9,7 @@ import dcs.executor.RemoteExecutor;
 import dcs.executor.Task;
 
 class ComputingService implements RemoteExecutor {
-    private static final int PORT = 55555;
+    private static final int EXPORT_OBJEXT_PORT = 55555;
     private ComputingService() {
     }
     
@@ -25,8 +25,8 @@ class ComputingService implements RemoteExecutor {
         
         try {
             RemoteExecutor engine = new ComputingService();
-            RemoteExecutor stub = (RemoteExecutor) UnicastRemoteObject.exportObject(engine, PORT);
-            Registry registry = LocateRegistry.getRegistry();
+            RemoteExecutor stub = (RemoteExecutor) UnicastRemoteObject.exportObject(engine, EXPORT_OBJEXT_PORT);
+            Registry registry = LocateRegistry.getRegistry(REGISTRY_PORT);
             registry.rebind(RemoteExecutor.EXECUTOR_NAME, stub);
             System.out.println("ComputingService bound");
         } catch (Exception e) {

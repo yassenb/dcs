@@ -167,8 +167,9 @@ class ProcessManager:
 
     def spawn_processes(self, ip):
         if not self.__rmi_registry_process or self.__rmi_registry_process.poll() != None:
-            # TODO maybe fix for win users if they don't have it in path
-            self.__rmi_registry_process = subprocess.Popen(["rmiregistry"])
+            # TODO fix for win users if they don't have it in path
+            # and hard-coded port
+            self.__rmi_registry_process = subprocess.Popen(["rmiregistry", "55556"])
 
         if not self.__service_process or self.__service_process.poll() != None:
             curdir = Configuration.get_base_path()

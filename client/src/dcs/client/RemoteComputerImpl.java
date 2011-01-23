@@ -29,7 +29,7 @@ public class RemoteComputerImpl implements RemoteComputer {
     }
     
     private void initializeExecutor(String host) throws RemoteException, NotBoundException {
-        Registry registry = LocateRegistry.getRegistry(host);
+        Registry registry = LocateRegistry.getRegistry(host, RemoteExecutor.REGISTRY_PORT);
         executor = (RemoteExecutor) registry.lookup(RemoteExecutor.EXECUTOR_NAME);
     }
 }
