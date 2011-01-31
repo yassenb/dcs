@@ -13,10 +13,13 @@
 
     <target name="redist" depends="compile">
         <jar jarfile="redist/lib/test-client.jar" basedir="build">
-            <zipfileset src="../client/redist/lib/client.jar" excludes="META-INF/*" /> 
             <manifest>
                 <attribute name="Main-Class" value="IntGenerator"/>
+                <attribute name="Class-Path" value="client.jar"/>
             </manifest>
         </jar>
+        <copy todir="redist/lib">
+            <fileset dir="../client/redist/lib"/>
+        </copy>
     </target>
 </project>
