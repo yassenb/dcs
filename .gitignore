@@ -1,13 +1,2 @@
 *.swp
-doc
-sandbox
-client/build
-server/build
-test-client/build
-server/redist
-client/redist
-test-client/redist
-server/gui/dcs.cfg
-junit4.8.2
-mockito-1.8.5
-sqlite4java-201
+old_code
