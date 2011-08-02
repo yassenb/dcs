@@ -5,21 +5,15 @@ import dcs.common.{ClassRequestProtocol, TaskResponseProtocol, TaskRequestProtoc
 
 object App {
   def main(args: Array[String]) {
-    val socket = new Socket(InetAddress.getByName("localhost"), Constants.PORT)
-    try {
+    SocketContext { (is, os) =>
       val (taskID, objectBytes) =
-        (new TaskRequestProtocol(socket.getInputStream, socket.getOutputStream)).requestTask()
+        (new TaskRequestProtocol(is, os)).requestTask()
       val cl = new NetworkClassLoader
       val answer = TaskExecutor.execute(objectBytes, cl)
 
-      val socket2 = new Socket(InetAddress.getByName("localhost"), Constants.PORT)
-      try {
-        (new TaskResponseProtocol(socket2.getInputStream, socket2.getOutputStream)).sendAnswer(taskID, answer)
-      } finally {
-        socket2.close()
+      SocketContext { (is, os) =>
+        (new TaskResponseProtocol(is, os)).sendAnswer(taskID, answer)
       }
-    } finally {
-      socket.close()
     }
   }
 }
