@@ -1,7 +1,6 @@
 package dcs.server
 
-import java.net.{InetAddress, Socket}
-import dcs.common.{ClassRequestProtocol, Constants}
+import dcs.common.ClassRequestProtocol
 
 class NetworkClassLoader() extends ClassLoader {
   override def findClass(name: String): Class[_] = {

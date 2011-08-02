@@ -1,7 +1,6 @@
 package dcs.server
 
-import java.net.{InetAddress, Socket}
-import dcs.common.{ClassRequestProtocol, TaskResponseProtocol, TaskRequestProtocol, Constants}
+import dcs.common.{TaskResponseProtocol, TaskRequestProtocol}
 
 object App {
   def main(args: Array[String]) {
