@@ -1,7 +1,0 @@
-upgrade to python 2.7 for the bind address
-see about packaging python
-client automatic discovery
-scheduling tasks on different hosts
-error handling
-
-think about class loading problem (for now put every new jar in a separate folder on the server)

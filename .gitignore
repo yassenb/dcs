@@ -1,2 +1,6 @@
 *.swp
-old_code
+*.iml
+*.ipr
+*.iws
+
+**/target

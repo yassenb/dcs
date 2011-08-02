@@ -1,3 +1,0 @@
-grant codeBase "file:/home/yassen/projects/dcs/-" {
-    permission java.security.AllPermission;
-};
