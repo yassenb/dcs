@@ -4,6 +4,7 @@ import java.lang.Thread
 import java.net.Socket
 import java.io._
 import dcs.common.{ClassRequestProtocol, TaskResponseProtocol, TaskRequestProtocol, PingProtocol}
+import java.util.Random
 
 class ServerCommunicatorThread(socket: Socket) extends Thread {
   override def run() {
@@ -13,14 +14,15 @@ class ServerCommunicatorThread(socket: Socket) extends Thread {
       in.readUTF() match {
         case PingProtocol.id =>
           // TODO change ping time
-          (new PingProtocol(socket.getInputStream, socket.getOutputStream)).respondTimeTillNextPing(5)
+          (new PingProtocol(socket.getInputStream, socket.getOutputStream))
+            .respondTimeTillNextPing((new Random()).nextInt(4))
         case TaskRequestProtocol.id =>
           val t = new SimpleTask(0.5)
           // TODO task id
           (new TaskRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondTask(1, getObjectBytes(t))
         case TaskResponseProtocol.id =>
           val (taskID, answer) = (new TaskResponseProtocol(socket.getInputStream, socket.getOutputStream)).getAnswer
-          answer.asInstanceOf[Double]
+          println(answer.asInstanceOf[Double])
         case ClassRequestProtocol.id =>
           (new ClassRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondClassBytes(getClassBytes)
         case id: String => throw new Exception("error: unknown id " + id)
