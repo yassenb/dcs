@@ -10,6 +10,7 @@ object App {
     try {
       while (true) {
         val socket = listener.accept()
+        // TODO move this to a cached thread executor for better performance
         (new ServerCommunicatorThread(socket)).start()
       }
     } catch {
