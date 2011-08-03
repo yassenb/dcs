@@ -3,26 +3,29 @@ package dcs.client
 import java.lang.Thread
 import java.net.Socket
 import java.io._
-import dcs.common.{ClassRequestProtocol, TaskResponseProtocol, TaskRequestProtocol, PingProtocol}
 import java.util.Random
+import dcs.common._
 
-class ServerCommunicatorThread(socket: Socket) extends Thread {
+class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
   override def run() {
     try {
       val in = new DataInputStream(socket.getInputStream)
       val serverID = in.readInt()
       in.readUTF() match {
         case PingProtocol.id =>
+          logger.debug("got ping")
           // TODO change ping time
           (new PingProtocol(socket.getInputStream, socket.getOutputStream))
             .respondTimeTillNextPing((new Random()).nextInt(4))
         case TaskRequestProtocol.id =>
+          logger.debug("got task request")
           val t = new SimpleTask(0.5)
           // TODO task id
           (new TaskRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondTask(1, getObjectBytes(t))
         case TaskResponseProtocol.id =>
+          logger.debug("got task response")
           val (taskID, answer) = (new TaskResponseProtocol(socket.getInputStream, socket.getOutputStream)).getAnswer
-          println(answer.asInstanceOf[Double])
+          answer.asInstanceOf[Double]
         case ClassRequestProtocol.id =>
           (new ClassRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondClassBytes(getClassBytes)
         case id: String => throw new Exception("error: unknown id " + id)
@@ -31,10 +34,10 @@ class ServerCommunicatorThread(socket: Socket) extends Thread {
     } catch {
       case ioe: IOException =>
         // TODO handle error
-        println(ioe.getMessage)
+        logger.error(ioe.getMessage, ioe)
       case e: Exception =>
         // TODO handle error
-        println(e.getMessage)
+        logger.error(e.getMessage, e)
     } finally {
       socket.close()
     }
