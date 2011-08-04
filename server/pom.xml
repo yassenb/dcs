@@ -16,4 +16,21 @@
       <version>${common.version}</version>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <version>${appassembler.version}</version>
+        <configuration>
+          <programs>
+            <program>
+              <mainClass>dcs.server.ClientPoller</mainClass>
+              <name>dcs-server</name>
+            </program>
+          </programs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
