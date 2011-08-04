@@ -2,7 +2,7 @@ package dcs.common
 
 import java.io.{DataInputStream, DataOutputStream, OutputStream, InputStream}
 
-class PingProtocol(in: InputStream, override val out: OutputStream) extends ProtocolWithIdentification {
+class PingProtocol(in: InputStream, override protected val out: OutputStream) extends ProtocolWithIdentification {
   def requestTimeTillNextPing: Int = {
     initiateCommunication(PingProtocol.id)
     

@@ -2,7 +2,8 @@ package dcs.common
 
 import java.io.{DataInputStream, DataOutputStream, OutputStream, InputStream}
 
-class ClassRequestProtocol(in: InputStream, override val out: OutputStream) extends ProtocolWithIdentification {
+class ClassRequestProtocol(in: InputStream, override protected val out: OutputStream)
+    extends ProtocolWithIdentification {
   def requestClassBytes(name: String): Array[Byte] = {
     initiateCommunication(ClassRequestProtocol.id)
     val dataOut = new DataOutputStream(out)

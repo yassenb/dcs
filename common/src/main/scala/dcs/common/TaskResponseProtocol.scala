@@ -2,7 +2,8 @@ package dcs.common
 
 import java.io._
 
-class TaskResponseProtocol(in: InputStream, override val out: OutputStream) extends ProtocolWithIdentification {
+class TaskResponseProtocol(in: InputStream, override protected val out: OutputStream)
+    extends ProtocolWithIdentification {
   def sendAnswer(taskID: Int, answer: Serializable) {
     initiateCommunication(TaskResponseProtocol.id)
 
