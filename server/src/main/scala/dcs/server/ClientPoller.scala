@@ -14,7 +14,8 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
                      = new TaskResponseProtocol(_, _),
                    executeTask: Array[Byte] => java.io.Serializable
                      = TaskExecutor.execute(_, new NetworkClassLoader),
-                   executor: InterruptibleExecutor = new InterruptibleExecutor) {
+                   executor: InterruptibleExecutor = new InterruptibleExecutor,
+                   applicationState: ApplicationState = new ApplicationState) {
   def startPolling() {
     class Poller extends Actor {
       def act() {
@@ -62,12 +63,5 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
         signalFinish()
       })
     }
-  }
-}
-
-object ClientPoller {
-  def main(args: Array[String]) {
-    val cp = new ClientPoller()
-    cp.startPolling()
   }
 }
