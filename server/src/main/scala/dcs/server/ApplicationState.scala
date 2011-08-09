@@ -1,11 +1,17 @@
 package dcs.server
 
-import dcs.common.LockContext
 import concurrent.Lock
+import dcs.common.LockContext
 
 class ApplicationState(createConfiguration: () => Configuration = () => new Configuration) {
   private val addressesLock = new Lock
+  private var eventSubscriber: StateEventSubscriber = new Object with StateEventSubscriber
   private var (remoteAddress, port, localAddress) = createConfiguration().getAddresses
+  private var error: Option[String] = None
+
+  def subscribe(subscriber: StateEventSubscriber) {
+    eventSubscriber = subscriber
+  }
   
   /**
    * Retrieve the remote address and port to contact and the local address to bind to
@@ -24,5 +30,10 @@ class ApplicationState(createConfiguration: () => Configuration = () => new Conf
       this.remoteAddress = remoteAddress
       this.localAddress = localAddress
     }
+  }
+  
+  def setError(error: Option[String]) {
+    this.error = error
+    eventSubscriber.onError(error)
   }
 }

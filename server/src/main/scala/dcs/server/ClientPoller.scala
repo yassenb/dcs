@@ -35,6 +35,7 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
                   }
                 }
               }
+              applicationState.setError(None)
             }
           }
 
@@ -45,6 +46,7 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
           // TODO more precise error handling
           case e: Exception =>
             logger.error(e.getMessage, e)
+            applicationState.setError(Some(e.getMessage))
             // TODO change value
             TimeUnit.SECONDS.sleep(2)
         }

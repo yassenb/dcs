@@ -3,7 +3,12 @@ package dcs.server
 import swing._
 import event.ButtonClicked
 
-class ServerFrame(applicationState: ApplicationState = new ApplicationState) extends MainFrame {
+class ServerFrame(applicationState: ApplicationState = new ApplicationState)
+    extends MainFrame with StateEventSubscriber {
+  private val state = new Label
+
+  applicationState.subscribe(this)
+  
   {
     title = "dcs server"
 
@@ -16,6 +21,8 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState) ext
 
     contents = new BoxPanel(Orientation.Vertical) {
       contents.append(
+        new Label("state"),
+        state,
         new Label("remote address"),
         remoteAddress,
         new Label("local address to bind to"),
@@ -29,5 +36,17 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState) ext
       case ButtonClicked(`updateButton`) =>
         applicationState.setAddresses(remoteAddress.text, localAddress.text)
     }
+  }
+
+  def submitToEventThread(block: => Unit) {
+    java.awt.EventQueue.invokeLater(new Runnable {
+      def run() {
+        block
+      }
+    })
+  }
+
+  override def onError(error: Option[String]) {
+    submitToEventThread({ state.text = error.getOrElse("OK") })
   }
 }
