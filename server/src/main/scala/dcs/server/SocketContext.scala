@@ -1,13 +1,16 @@
 package dcs.server
 
 import java.io.{OutputStream, InputStream}
-import dcs.common.Constants
 import java.net.{InetAddress, Socket}
 
 object SocketContext {
-  def apply[T <: Any](f: (InputStream, OutputStream) => T): T = {
-    // TODO change to configured host
-    val socket = new Socket(InetAddress.getByName("localhost"), Constants.PORT)
+  def apply[T <: Any](tuple: (String, Int, String))
+                     (f: (InputStream, OutputStream) => T): T = {
+    val (remoteAddress, port, localAddress) = tuple
+    val socket = new Socket(InetAddress.getByName(remoteAddress),
+                            port,
+                            if (localAddress != null) InetAddress.getByName(localAddress) else null,
+                            0)
     try {
       f(socket.getInputStream, socket.getOutputStream)
     } finally {
