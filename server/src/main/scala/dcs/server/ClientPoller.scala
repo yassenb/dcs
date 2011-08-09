@@ -60,7 +60,7 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
     SocketContext(applicationState.getAddresses) { (is, os) =>
       val (taskID, objectBytes) = createTaskRequestProtocol(is, os).requestTask()
       
-      executor.submit({() =>
+      executor.submit({
         val answer = executeTask(objectBytes)
         SocketContext(applicationState.getAddresses) { (is, os) =>
           createTaskResponseProtocol(is, os).sendAnswer(taskID, answer)
