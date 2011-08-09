@@ -2,9 +2,10 @@ package dcs.server
 
 import java.io.{OutputStream, InputStream}
 import java.util.concurrent.TimeUnit
-import actors.Actor
 import scala.concurrent.ops._
 import dcs.common.{Logging, PingProtocol, TaskResponseProtocol, TaskRequestProtocol}
+import actors.Channel
+import actors.Actor._
 
 class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtocol,
                    createTaskRequestProtocol: (InputStream, OutputStream) => TaskRequestProtocol,
@@ -13,12 +14,14 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
                    executor: InterruptibleExecutor,
                    applicationState: ApplicationState) extends Logging {
   def startPolling() {
-    class Poller extends Actor {
-      def act() {
-        try {
-          case object Wake
-          val wake = () => this ! Wake
+    actor {
+      case object Wake
 
+      while (true) {
+        // creating a new channel so that any messages to the old one will be discarded
+        val channel = new Channel[Any]
+        val wake = () => channel ! Wake
+        try {
           var shouldBeSleeping = false
           while (!shouldBeSleeping) {
             SocketContext(applicationState.getAddresses) { (is, os) =>
@@ -35,25 +38,18 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
             }
           }
 
-          receive {
+          channel.receive {
             case Wake =>
           }
-
-          // spawning a new actor so that any leftover wake up messages get discarded
-          // this could maybe be a message to another actor and leave the job of spawning to it
-          (new Poller).start()
         } catch {
           // TODO more precise error handling
-          case e: Exception => logger.error(e.getMessage, e)
-
-          // TODO change value
-          TimeUnit.SECONDS.sleep(2)
-          (new Poller).start()
+          case e: Exception =>
+            logger.error(e.getMessage, e)
+            // TODO change value
+            TimeUnit.SECONDS.sleep(2)
         }
       }
     }
-    
-    (new Poller).start()
   }
 
   private def executeRemoteTask(signalFinish: () => Unit) {
