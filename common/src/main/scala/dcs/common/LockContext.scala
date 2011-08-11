@@ -3,7 +3,7 @@ package dcs.common
 import concurrent.Lock
 
 object LockContext {
-  def apply[T <: Any](lock: Lock)(block: T): T = {
+  def apply[T](lock: Lock)(block: T): T = {
     try {
       lock.acquire()
       block

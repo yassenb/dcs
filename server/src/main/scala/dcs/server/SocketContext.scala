@@ -4,8 +4,7 @@ import java.io.{OutputStream, InputStream}
 import java.net.{InetAddress, Socket}
 
 object SocketContext {
-  def apply[T <: Any](tuple: (String, Int, String))
-                     (f: (InputStream, OutputStream) => T): T = {
+  def apply[T](tuple: (String, Int, String))(f: (InputStream, OutputStream) => T): T = {
     val (remoteAddress, port, localAddress) = tuple
     val socket = new Socket(InetAddress.getByName(remoteAddress),
                             port,
