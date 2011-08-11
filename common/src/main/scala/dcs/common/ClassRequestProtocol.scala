@@ -1,11 +1,12 @@
 package dcs.common
 
 import java.io.{DataInputStream, DataOutputStream, OutputStream, InputStream}
+import java.util.UUID
 
 class ClassRequestProtocol(in: InputStream, override protected val out: OutputStream)
     extends ProtocolWithIdentification {
-  def requestClassBytes(name: String): Array[Byte] = {
-    initiateCommunication(ClassRequestProtocol.id)
+  def requestClassBytes(serverID: UUID, name: String): Array[Byte] = {
+    initiateCommunication(serverID, ClassRequestProtocol.id)
     val dataOut = new DataOutputStream(out)
     dataOut.writeUTF(name)
 

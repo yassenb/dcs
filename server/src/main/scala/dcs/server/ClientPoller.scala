@@ -25,7 +25,7 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
           var shouldBeSleeping = false
           while (!shouldBeSleeping) {
             SocketContext(applicationState.getAddresses) { (is, os) =>
-              createPingProtocol(is, os).requestTimeTillNextPing match {
+              createPingProtocol(is, os).requestTimeTillNextPing(applicationState.serverID) match {
                 case 0 => executeRemoteTask(wake)
                 case s => {
                   shouldBeSleeping = true
@@ -56,12 +56,12 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
 
   private def executeRemoteTask(signalFinish: () => Unit) {
     SocketContext(applicationState.getAddresses) { (is, os) =>
-      val (taskID, objectBytes) = createTaskRequestProtocol(is, os).requestTask()
+      val (taskID, objectBytes) = createTaskRequestProtocol(is, os).requestTask(applicationState.serverID)
       
       executor.submit({
         val answer = executeTask(objectBytes)
         SocketContext(applicationState.getAddresses) { (is, os) =>
-          createTaskResponseProtocol(is, os).sendAnswer(taskID, answer)
+          createTaskResponseProtocol(is, os).sendAnswer(applicationState.serverID, taskID, answer)
         }
         signalFinish()
       })

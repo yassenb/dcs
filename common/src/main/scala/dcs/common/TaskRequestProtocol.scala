@@ -1,12 +1,13 @@
 package dcs.common
 
 import java.io.{OutputStream, InputStream, DataInputStream, DataOutputStream}
+import java.util.UUID
 
 class TaskRequestProtocol(in: InputStream, override protected val out: OutputStream)
     extends ProtocolWithIdentification {
   // TODO think about rewriting request and response so as to avoid code duplication and enforce type safety
-  def requestTask(): (Int, Array[Byte]) = {
-    initiateCommunication(TaskRequestProtocol.id)
+  def requestTask(serverID: UUID): (Int, Array[Byte]) = {
+    initiateCommunication(serverID, TaskRequestProtocol.id)
     
     val dataIn = new DataInputStream(in)
     val taskID = dataIn.readInt()

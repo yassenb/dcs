@@ -1,11 +1,12 @@
 package dcs.common
 
 import java.io._
+import java.util.UUID
 
 class TaskResponseProtocol(in: InputStream, override protected val out: OutputStream)
     extends ProtocolWithIdentification {
-  def sendAnswer(taskID: Int, answer: Serializable) {
-    initiateCommunication(TaskResponseProtocol.id)
+  def sendAnswer(serverID: UUID, taskID: Int, answer: Serializable) {
+    initiateCommunication(serverID, TaskResponseProtocol.id)
 
     val dataOut = new DataOutputStream(out)
     dataOut.writeInt(taskID)

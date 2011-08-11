@@ -1,14 +1,15 @@
 package dcs.common
 
 import java.io.{OutputStream, DataOutputStream}
+import java.util.UUID
 
 abstract class ProtocolWithIdentification {
   protected val out: OutputStream
 
-  protected def initiateCommunication(id: String) {
+  protected def initiateCommunication(serverID: UUID, protocolID: String) {
     val dataOut = new DataOutputStream(out)
-    // TODO replace with randomly generated at installation UUID
-    dataOut.writeInt(1)
-    dataOut.writeUTF(id)
+    dataOut.writeLong(serverID.getMostSignificantBits)
+    dataOut.writeLong(serverID.getLeastSignificantBits)
+    dataOut.writeUTF(protocolID)
   }
 }

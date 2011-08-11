@@ -2,12 +2,14 @@ package dcs.server
 
 import concurrent.Lock
 import dcs.common.LockContext
+import java.util.UUID
 
 class ApplicationState(createConfiguration: () => Configuration = () => new Configuration) {
   private val addressesLock = new Lock
   private var eventSubscriber: StateEventSubscriber = new Object with StateEventSubscriber
   private var (remoteAddress, port, localAddress) = createConfiguration().getAddresses
   private var error: Option[String] = None
+  val serverID: UUID = UUID.randomUUID()
 
   def subscribe(subscriber: StateEventSubscriber) {
     eventSubscriber = subscriber

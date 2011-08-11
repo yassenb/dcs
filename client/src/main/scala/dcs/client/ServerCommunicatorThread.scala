@@ -3,14 +3,14 @@ package dcs.client
 import java.lang.Thread
 import java.net.Socket
 import java.io._
-import java.util.Random
 import dcs.common._
+import java.util.{UUID, Random}
 
 class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
   override def run() {
     try {
       val in = new DataInputStream(socket.getInputStream)
-      val serverID = in.readInt()
+      val serverID = new UUID(in.readLong(), in.readLong())
       in.readUTF() match {
         case PingProtocol.id =>
           logger.debug("got ping")
