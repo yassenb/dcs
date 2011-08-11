@@ -36,4 +36,8 @@ class ApplicationState(createConfiguration: () => Configuration = () => new Conf
     this.error = error
     eventSubscriber.onError(error)
   }
+
+  def save() {
+    Configuration.save(remoteAddress, localAddress)
+  }
 }

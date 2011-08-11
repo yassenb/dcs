@@ -84,4 +84,9 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState)
   override def onError(error: Option[String]) {
     submitToEventThread({ state.text = error.getOrElse("OK") })
   }
+
+  override def closeOperation() {
+    applicationState.save()
+    super.closeOperation()
+  }
 }
