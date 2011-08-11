@@ -73,16 +73,8 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState)
     }
   }
 
-  def submitToEventThread(block: => Unit) {
-    java.awt.EventQueue.invokeLater(new Runnable {
-      def run() {
-        block
-      }
-    })
-  }
-
   override def onError(error: Option[String]) {
-    submitToEventThread({ state.text = error.getOrElse("OK") })
+    onEDT({ state.text = error.getOrElse("OK") })
   }
 
   override def closeOperation() {
