@@ -1,7 +1,7 @@
 package dcs.server
 
 import java.io.{ObjectStreamClass, InputStream, ObjectInputStream, ByteArrayInputStream}
-import dcs.common.Task
+import dcs.common.{ClosableContext, Task}
 
 object TaskExecutor {
   def execute(objectBytes: Array[Byte], classLoader: ClassLoader): java.io.Serializable = {
@@ -15,11 +15,8 @@ object TaskExecutor {
       }
     }
 
-    val ois = new CustomClassLoaderOIS(new ByteArrayInputStream(bytes))
-    try {
+    ClosableContext(new CustomClassLoaderOIS(new ByteArrayInputStream(bytes))) {(ois) =>
       ois.readObject().asInstanceOf[Task[Serializable]]
-    } finally {
-      ois.close()
     }
   }
 }

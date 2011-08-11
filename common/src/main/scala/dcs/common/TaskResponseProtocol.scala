@@ -11,11 +11,8 @@ class TaskResponseProtocol(in: InputStream, override protected val out: OutputSt
     dataOut.writeInt(taskID)
 
     val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    try {
+    ClosableContext(new ObjectOutputStream(baos)){(oos) =>
       oos.writeObject(answer)
-    } finally {
-      oos.close()
     }
     dataOut.writeInt(baos.size)
     dataOut.write(baos.toByteArray)
@@ -28,11 +25,8 @@ class TaskResponseProtocol(in: InputStream, override protected val out: OutputSt
     val objectBytes = new Array[Byte](dataIn.readInt())
     dataIn.readFully(objectBytes)
 
-    val ois = new ObjectInputStream(new ByteArrayInputStream(objectBytes))
-    try {
+    ClosableContext(new ObjectInputStream(new ByteArrayInputStream(objectBytes))){(ois) =>
       (taskID, ois.readObject().asInstanceOf[Serializable])
-    } finally {
-      ois.close()
     }
   }
 }

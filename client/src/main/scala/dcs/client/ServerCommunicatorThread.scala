@@ -56,11 +56,8 @@ class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
 
   private def getObjectBytes(o: Serializable): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    try {
+    ClosableContext(new ObjectOutputStream(baos)){(oos) =>
       oos.writeObject(o)
-    } finally {
-      oos.close()
     }
 
     baos.toByteArray
