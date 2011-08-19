@@ -21,8 +21,8 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState)
         "connecting to the remote address. <br/> Leave blank to automatically pick one.</html>"
     }
     val addresses = applicationState.getAddresses
-    remoteAddress.text = addresses._1
-    localAddress.text = addresses._3
+    remoteAddress.text = addresses.remoteAddress
+    localAddress.text = addresses.localAddress
     val updateButton = new Button("update")
 
     contents = new GridBagPanel {

@@ -17,14 +17,9 @@ class Configuration(file: String = Constants.CONFIGURATION_FILE) {
       case _ => ("", "")
     }
   }
-  /**
-   * Retrieve the remote address and port to contact and the local address to bind to
-   *
-   * @return {@code (remoteAddress, remotePort, localAddress)}. If {@code localAddress} is {@code null} an arbitrary
-   * address should be chosen
-   */
-  def getAddresses: (String, Int, String) = {
-    (remoteAddress, Constants.PORT, localAddress)
+
+  def getAddresses: Addresses = {
+    Addresses(remoteAddress, Constants.PORT, localAddress)
   }
 }
 

@@ -7,23 +7,20 @@ import java.util.UUID
 class ApplicationState(createConfiguration: () => Configuration = () => new Configuration) {
   private val addressesLock = new Lock
   private var eventSubscriber: StateEventSubscriber = new Object with StateEventSubscriber
-  private var (remoteAddress, port, localAddress) = createConfiguration().getAddresses
+  private var (remoteAddress, port, localAddress) = {
+    val x = createConfiguration().getAddresses
+    (x.remoteAddress, x.port, x.localAddress)
+  }
   private var error: Option[String] = None
   val serverID: UUID = UUID.randomUUID()
 
   def subscribe(subscriber: StateEventSubscriber) {
     eventSubscriber = subscriber
   }
-  
-  /**
-   * Retrieve the remote address and port to contact and the local address to bind to
-   *
-   * @return {@code (remoteAddress, remotePort, localAddress)}. If {@code localAddress} is {@code null} an arbitrary
-   * address should be chosen
-   */
-  def getAddresses: (String, Int, String) = {
+
+  def getAddresses: Addresses = {
     LockContext(addressesLock) {
-      (remoteAddress, port, localAddress)
+      Addresses(remoteAddress, port, localAddress)
     }
   }
 
