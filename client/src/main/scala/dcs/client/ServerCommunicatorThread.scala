@@ -14,14 +14,16 @@ class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
       in.readUTF() match {
         case PingProtocol.id =>
           logger.debug("got ping")
-          // TODO change ping time
-          (new PingProtocol(socket.getInputStream, socket.getOutputStream))
-            .respondTimeTillNextPing((new Random()).nextInt(4))
-        case TaskRequestProtocol.id =>
-          logger.debug("got task request")
-          val t = new SimpleTask(0.5)
-          // TODO task id
-          (new TaskRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondTask(1, getObjectBytes(t))
+          val x = (new Random()).nextInt(4)
+          if (x > 0) {
+            logger.debug("responding with wait %d seconds".format(x))
+            (new PingProtocol(socket.getInputStream, socket.getOutputStream)).respondTimeTillNextPing(x)
+          } else {
+            logger.debug("responding with task")
+            val t = new SimpleTask(0.5)
+            (new PingProtocol(socket.getInputStream, socket.getOutputStream))
+              .respondTask(RequestedTask(1, getObjectBytes(t)))
+          }
         case TaskResponseProtocol.id =>
           logger.debug("got task response")
           val (taskID, answer) = (new TaskResponseProtocol(socket.getInputStream, socket.getOutputStream)).getAnswer

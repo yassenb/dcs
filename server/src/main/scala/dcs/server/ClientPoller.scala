@@ -3,12 +3,11 @@ package dcs.server
 import java.io.{OutputStream, InputStream}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ops._
-import dcs.common.{Logging, PingProtocol, TaskResponseProtocol, TaskRequestProtocol}
 import actors.Channel
 import actors.Actor._
+import dcs.common.{RequestedTask, Logging, PingProtocol, TaskResponseProtocol}
 
 class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtocol,
-                   createTaskRequestProtocol: (InputStream, OutputStream) => TaskRequestProtocol,
                    createTaskResponseProtocol: (InputStream, OutputStream) => TaskResponseProtocol,
                    executeTask: Array[Byte] => java.io.Serializable,
                    executor: InterruptibleExecutor,
@@ -25,18 +24,18 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
           var shouldBeSleeping = false
           while (!shouldBeSleeping) {
             SocketContext(applicationState.getAddresses) { (is, os) =>
-              createPingProtocol(is, os).requestTimeTillNextPing(applicationState.serverID) match {
-                case 0 => executeRemoteTask(wake)
-                case s => {
-                  shouldBeSleeping = true
-                  spawn {
-                    TimeUnit.SECONDS.sleep(s)
-                    wake()
-                  }
+              val x = createPingProtocol(is, os).requestTaskOrSleepTime(applicationState.serverID)
+              if (x.isLeft) {
+                executeRemoteTask(x.left.get, wake)
+              } else {
+                shouldBeSleeping = true
+                spawn {
+                  TimeUnit.SECONDS.sleep(x.right.get)
+                  wake()
                 }
               }
-              applicationState.setError(None)
             }
+            applicationState.setError(None)
           }
 
           channel.receive {
@@ -54,17 +53,13 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
     }
   }
 
-  private def executeRemoteTask(signalFinish: () => Unit) {
-    SocketContext(applicationState.getAddresses) { (is, os) =>
-      val (taskID, objectBytes) = createTaskRequestProtocol(is, os).requestTask(applicationState.serverID)
-      
-      executor.submit({
-        val answer = executeTask(objectBytes)
-        SocketContext(applicationState.getAddresses) { (is, os) =>
-          createTaskResponseProtocol(is, os).sendAnswer(applicationState.serverID, taskID, answer)
-        }
-        signalFinish()
-      })
-    }
+  private def executeRemoteTask(task: RequestedTask, signalFinish: () => Unit) {
+    executor.submit({
+      val answer = executeTask(task.objectBytes)
+      SocketContext(applicationState.getAddresses) { (is, os) =>
+        createTaskResponseProtocol(is, os).sendAnswer(applicationState.serverID, task.taskID, answer)
+      }
+      signalFinish()
+    })
   }
 }
