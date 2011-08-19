@@ -14,33 +14,36 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
                    applicationState: ApplicationState) extends Logging {
   def startPolling() {
     actor {
-      case object Wake
+      case object EndSleep
+      case object EndTask
 
       while (true) {
-        // creating a new channel so that any messages to the old one will be discarded
-        val channel = new Channel[Any]
-        val wake = () => channel ! Wake
         try {
-          var shouldBeSleeping = false
-          while (!shouldBeSleeping) {
-            SocketContext(applicationState.getAddresses) { (is, os) =>
-              val x = createPingProtocol(is, os).requestTaskOrSleepTime(applicationState.serverID)
-              if (x.isLeft) {
-                executeRemoteTask(x.left.get, wake)
-              } else {
-                shouldBeSleeping = true
-                spawn {
-                  TimeUnit.SECONDS.sleep(x.right.get)
-                  wake()
-                }
+          // creating a new channel so that any messages to the old one will be discarded
+          val channel = new Channel[Any]
+
+          def poll() {
+            val x = SocketContext(applicationState.getAddresses) { (is, os) =>
+              createPingProtocol(is, os).requestTaskOrSleepTime(applicationState.serverID)
+            }
+            if (x.isLeft) {
+              executeRemoteTask(x.left.get, { channel ! EndTask })
+              poll()
+            } else {
+              spawn {
+                TimeUnit.SECONDS.sleep(x.right.get)
+                channel ! EndSleep
+              }
+
+              channel.receive {
+                case EndSleep => poll()
+                case EndTask =>
               }
             }
+
             applicationState.setError(None)
           }
-
-          channel.receive {
-            case Wake =>
-          }
+          poll()
         } catch {
           // TODO more precise error handling
           case e: Exception =>
@@ -53,13 +56,13 @@ class ClientPoller(createPingProtocol: (InputStream, OutputStream) => PingProtoc
     }
   }
 
-  private def executeRemoteTask(task: RequestedTask, signalFinish: () => Unit) {
+  private def executeRemoteTask(task: RequestedTask, signalFinish: => Unit) {
     executor.submit({
       val answer = executeTask(task.objectBytes)
       SocketContext(applicationState.getAddresses) { (is, os) =>
         createTaskResponseProtocol(is, os).sendAnswer(applicationState.serverID, task.taskID, answer)
       }
-      signalFinish()
+      signalFinish
     })
   }
 }
