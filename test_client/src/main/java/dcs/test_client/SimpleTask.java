@@ -1,8 +1,8 @@
-package dcs.client;
+package dcs.test_client;
 
 import dcs.common.Task;
 
-public class SimpleTask implements Task<Double> {
+class SimpleTask implements Task<Double> {
     private double a;
 
     SimpleTask(double a) {

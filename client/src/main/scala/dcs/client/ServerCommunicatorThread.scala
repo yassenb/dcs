@@ -20,7 +20,9 @@ class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
             (new PingProtocol(socket.getInputStream, socket.getOutputStream)).respondTimeTillNextPing(x)
           } else {
             logger.debug("responding with task")
-            val t = new SimpleTask(0.5)
+            val t = new Task[java.lang.Double] {
+              def execute(): java.lang.Double = 0.5
+            }
             (new PingProtocol(socket.getInputStream, socket.getOutputStream))
               .respondTask(RequestedTask(1, getObjectBytes(t)))
           }
