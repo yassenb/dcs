@@ -25,7 +25,7 @@
         <configuration>
           <programs>
             <program>
-              <mainClass>dcs.server.ClientPoller</mainClass>
+              <mainClass>dcs.server.Main</mainClass>
               <name>dcs-server</name>
             </program>
           </programs>
