@@ -9,7 +9,9 @@ import java.io.Serializable
 class DistributedComputeService private extends Actor {
   private[this] val tasks = new TreeMap[Int, SubmittedTask[_ <: Serializable]]()
   private[this] var taskCount = 0
-  
+  private[this] val taskDistributor = new TaskDistributor
+
+  taskDistributor.start()
   start()
   
   def submit[T <: Serializable](task: Task[T]): java.util.concurrent.Future[T] = {
@@ -23,7 +25,7 @@ class DistributedComputeService private extends Actor {
         case task: Task[Serializable] =>
           val st = new SubmittedTask(task)
           tasks.put(taskCount, st)
-          // TODO message task distributor with taskCount (id) here
+          taskDistributor ! NewTask(taskCount)
           taskCount += 1
           reply(st.getResult)
       }
