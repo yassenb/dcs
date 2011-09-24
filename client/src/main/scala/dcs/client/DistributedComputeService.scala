@@ -1,15 +1,33 @@
 package dcs.client
 
-import java.io.Serializable
 import dcs.common.Task
 import java.util.concurrent.Future
-import concurrent.SyncVar
+import actors.Actor
+import java.util.TreeMap
+import java.io.Serializable
 
-class DistributedComputeService private {
-  def submit[T <: Serializable](task: Task[T]): Future[T] = {
-    val v = new SyncVar[T]
-    v.set(task.execute())
-    new FutureSyncVar[T](v)
+class DistributedComputeService private extends Actor {
+  private[this] val tasks = new TreeMap[Int, SubmittedTask[_ <: Serializable]]()
+  private[this] var taskCount = 0
+  
+  start()
+  
+  def submit[T <: Serializable](task: Task[T]): java.util.concurrent.Future[T] = {
+    (this !? task).asInstanceOf[java.util.concurrent.Future[T]]
+  }
+
+  def act() {
+    loop {
+      react {
+        // TODO think about eliminating the type erasure here
+        case task: Task[Serializable] =>
+          val st = new SubmittedTask(task)
+          tasks.put(taskCount, st)
+          // TODO message task distributor with taskCount (id) here
+          taskCount += 1
+          reply(st.getResult)
+      }
+    }
   }
 }
 
