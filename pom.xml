@@ -103,6 +103,11 @@
                 </goals>
               </execution>
             </executions>
+            <configuration>
+              <args>
+                <arg>-unchecked</arg>
+              </args>
+            </configuration>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
