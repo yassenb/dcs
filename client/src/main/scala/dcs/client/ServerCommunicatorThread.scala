@@ -1,12 +1,13 @@
 package dcs.client
 
-import java.lang.Thread
 import java.net.Socket
 import java.io._
 import dcs.common._
-import java.util.{UUID, Random}
+import java.util.UUID
+import actors.Actor._
 
-class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
+class ServerCommunicatorThread(socket: Socket, computeService: DistributedComputeService)
+    extends Runnable with Logging {
   override def run() {
     try {
       val in = new DataInputStream(socket.getInputStream)
@@ -14,22 +15,20 @@ class ServerCommunicatorThread(socket: Socket) extends Thread with Logging {
       in.readUTF() match {
         case PingProtocol.id =>
           logger.debug("got ping")
-          val x = (new Random()).nextInt(4)
-          if (x > 0) {
-            logger.debug("responding with wait %d seconds".format(x))
-            (new PingProtocol(socket.getInputStream, socket.getOutputStream)).respondTimeTillNextPing(x)
-          } else {
-            logger.debug("responding with task")
-            val t = new Task[java.lang.Double] {
-              def execute(): java.lang.Double = 0.5
-            }
-            (new PingProtocol(socket.getInputStream, socket.getOutputStream))
-              .respondTask(RequestedTask(1, getObjectBytes(t)))
+          computeService ! Ping(serverID)
+          receive {
+            case seconds: Int =>
+              logger.debug("responding with wait %d seconds".format(seconds))
+              (new PingProtocol(socket.getInputStream, socket.getOutputStream)).respondTimeTillNextPing(seconds)
+            case task: Task[Serializable] =>
+              logger.debug("responding with task")
+              (new PingProtocol(socket.getInputStream, socket.getOutputStream))
+                .respondTask(RequestedTask(1, getObjectBytes(task)))
           }
         case TaskResponseProtocol.id =>
           logger.debug("got task response")
           val (taskID, answer) = (new TaskResponseProtocol(socket.getInputStream, socket.getOutputStream)).getAnswer
-          answer.asInstanceOf[Double]
+          computeService ! Answer(taskID, answer)
         case ClassRequestProtocol.id =>
           (new ClassRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondClassBytes(getClassBytes)
         case id: String => throw new Exception("error: unknown id " + id)

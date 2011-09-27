@@ -1,17 +1,19 @@
 package dcs.client
 
-import dcs.common.Constants
 import java.net.ServerSocket
+import dcs.common.Constants
 import java.io.IOException
+import java.util.concurrent.Executors
 
-object App {
-  def main(args: Array[String]) {
+class ServerCommunicator(computeService: DistributedComputeService) {
+  private[this] val executor = Executors.newCachedThreadPool()
+  
+  def start() {
     val listener = new ServerSocket(Constants.PORT)
     try {
       while (true) {
         val socket = listener.accept()
-        // TODO move this to a cached thread executor for better performance
-        (new ServerCommunicatorThread(socket)).start()
+        executor.submit(new ServerCommunicatorThread(socket, computeService))
       }
     } catch {
       case e: IOException =>
