@@ -6,10 +6,9 @@ import actors.Actor
 import java.util.TreeMap
 import java.io.Serializable
 
-class DistributedComputeService private extends Actor {
+class DistributedComputeService private (taskDistributor: TaskDistributor = new TaskDistributor) extends Actor {
   private[this] val tasks = new TreeMap[Int, SubmittedTask[_ <: Serializable]]()
   private[this] var taskCount = 0
-  private[this] val taskDistributor = new TaskDistributor
 
   taskDistributor.start()
   start()
