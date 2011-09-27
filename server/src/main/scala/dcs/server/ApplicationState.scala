@@ -4,11 +4,11 @@ import concurrent.Lock
 import dcs.common.LockContext
 import java.util.UUID
 
-class ApplicationState(createConfiguration: () => Configuration = () => new Configuration) {
+class ApplicationState(configuration: Configuration = new Configuration) {
   private val addressesLock = new Lock
   private var eventSubscriber: StateEventSubscriber = new Object with StateEventSubscriber
   private var (remoteAddress, port, localAddress) = {
-    val x = createConfiguration().getAddresses
+    val x = configuration.getAddresses
     (x.remoteAddress, x.port, x.localAddress)
   }
   private var error: Option[String] = None
