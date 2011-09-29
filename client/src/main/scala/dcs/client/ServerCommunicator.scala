@@ -5,10 +5,10 @@ import dcs.common.Constants
 import java.io.IOException
 import java.util.concurrent.Executors
 
-class ServerCommunicator(computeService: DistributedComputeService) {
+class ServerCommunicator(computeService: DistributedComputeService) extends Runnable {
   private[this] val executor = Executors.newCachedThreadPool()
   
-  def start() {
+  def run() {
     val listener = new ServerSocket(Constants.PORT)
     try {
       while (true) {

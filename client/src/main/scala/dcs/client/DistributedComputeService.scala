@@ -1,10 +1,10 @@
 package dcs.client
 
 import dcs.common.Task
-import java.util.concurrent.Future
 import actors.Actor
 import java.io.Serializable
 import java.util.{UUID, TreeMap}
+import java.util.concurrent.{Executors, Future}
 
 case class Ping(serverID: UUID)
 case class Answer(taskID: Int, result: Serializable)
@@ -43,7 +43,7 @@ class DistributedComputeService private (taskDistributor: TaskDistributor = new 
 
 object DistributedComputeService {
   private[this] val dcs = new DistributedComputeService
-  (new ServerCommunicator(dcs)).start()
+  Executors.newSingleThreadExecutor().submit(new ServerCommunicator(dcs))
 
   def submit[T <: Serializable](task: Task[T]): Future[T] = {
     dcs.submit(task)
