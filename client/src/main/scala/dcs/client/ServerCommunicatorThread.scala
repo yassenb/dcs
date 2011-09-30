@@ -49,7 +49,7 @@ class ServerCommunicatorThread(socket: Socket, computeService: DistributedComput
   // TODO move these methods elsewhere
   private def getClassBytes(name: String): Array[Byte] = {
     // TODO hard-coded path
-    val classRoot = "/home/yassen/projects/thesis/dcs/client/target/classes"
+    val classRoot = "/home/yassen/projects/thesis/dcs/test_client/target/classes"
     val fileName = classRoot + File.separatorChar + name.replace('.', File.separatorChar) + ".class"
     val inFile = new FileInputStream(fileName)
     val classBytes = new Array[Byte](inFile.available)
