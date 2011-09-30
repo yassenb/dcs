@@ -6,6 +6,8 @@ import dcs.common._
 import java.util.UUID
 import actors.Actor._
 
+case class IdentifiableTask(task: Task[Serializable], id: Int)
+
 class ServerCommunicatorThread(socket: Socket, computeService: DistributedComputeService)
     extends Runnable with Logging {
   override def run() {
@@ -20,10 +22,10 @@ class ServerCommunicatorThread(socket: Socket, computeService: DistributedComput
             case seconds: Int =>
               logger.debug("responding with wait %d seconds".format(seconds))
               (new PingProtocol(socket.getInputStream, socket.getOutputStream)).respondTimeTillNextPing(seconds)
-            case task: Task[Serializable] =>
+            case IdentifiableTask(task, id) =>
               logger.debug("responding with task")
               (new PingProtocol(socket.getInputStream, socket.getOutputStream))
-                .respondTask(RequestedTask(1, getObjectBytes(task)))
+                .respondTask(RequestedTask(id, getObjectBytes(task)))
           }
         case TaskResponseProtocol.id =>
           logger.debug("got task response")
