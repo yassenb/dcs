@@ -6,8 +6,11 @@ import java.io.Serializable
 import java.util.{UUID, TreeMap}
 import java.util.concurrent.{Executors, Future}
 
+// TODO move some of these messages used by more than one actor (not necessarily) to a separate file
 case class Ping(serverID: UUID)
 case class Answer(taskID: Int, result: Serializable)
+case class Sleep(seconds: Int)
+case class DoTask(taskID: Int)
 
 class DistributedComputeService private (taskDistributor: TaskDistributor = new TaskDistributor) extends Actor {
   private[this] val tasks = new TreeMap[Int, SubmittedTask[Serializable]]()
@@ -30,9 +33,15 @@ class DistributedComputeService private (taskDistributor: TaskDistributor = new 
           taskDistributor ! NewTask(taskCount)
           taskCount += 1
           reply(st.getResult)
-        case Ping(serverID) =>
-          // TODO ask the task distributor and reply with either number of seconds or task from map
-          reply(3)
+        case ping: Ping =>
+          taskDistributor ! ping
+          val server = sender
+          receive {
+            case Sleep(seconds) =>
+              server ! seconds
+            case DoTask(taskID) =>
+              server ! IdentifiableTask(tasks.get(taskID).task, taskID)
+          }
         case Answer(taskID, result) =>
           tasks.get(taskID).setResult(result)
           taskDistributor ! TaskDone(taskID)
