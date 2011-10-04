@@ -4,10 +4,8 @@ import dcs.common.ClosableContext
 import java.io._
 
 object ObjectToBytes {
-  def getClassBytes(name: String): Array[Byte] = {
-    // TODO hard-coded path
-    val classRoot = "/home/yassen/projects/thesis/dcs/test_client/target/classes"
-    val fileName = classRoot + File.separatorChar + name.replace('.', File.separatorChar) + ".class"
+  def getClassBytes(name: String, classPath: String): Array[Byte] = {
+    val fileName = classPath + File.separatorChar + name.replace('.', File.separatorChar) + ".class"
     val inFile = new FileInputStream(fileName)
     val classBytes = new Array[Byte](inFile.available)
     inFile.read(classBytes)

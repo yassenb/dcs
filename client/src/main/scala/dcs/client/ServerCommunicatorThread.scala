@@ -33,7 +33,7 @@ class ServerCommunicatorThread(socket: Socket, computeService: DistributedComput
           computeService ! Answer(taskID, answer)
         case ClassRequestProtocol.id =>
           (new ClassRequestProtocol(socket.getInputStream, socket.getOutputStream))
-            .respondClassBytes(ObjectToBytes.getClassBytes)
+            .respondClassBytes(ObjectToBytes.getClassBytes(_, DistributedComputeService.getClientClassPath.get))
         case id: String => throw new Exception("error: unknown id " + id)
         case _ => throw new Exception("communication error")
       }

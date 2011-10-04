@@ -2,9 +2,9 @@ package dcs.client
 
 import dcs.common.Task
 import actors.Actor
-import java.io.Serializable
 import java.util.{UUID, TreeMap}
 import java.util.concurrent.{Executors, Future}
+import java.io.{File, Serializable}
 
 // TODO move some of these messages used by more than one actor (not necessarily) to a separate file
 case class Ping(serverID: UUID)
@@ -52,9 +52,20 @@ class DistributedComputeService private (taskDistributor: TaskDistributor = new 
 
 object DistributedComputeService {
   private[this] val dcs = new DistributedComputeService
+  private[this] var clientClassPath: Option[String] = None
+
   Executors.newSingleThreadExecutor().submit(new ServerCommunicator(dcs))
 
+  def getClientClassPath = clientClassPath
+  
   def submit[T <: Serializable](task: Task[T]): Future[T] = {
+    if (!clientClassPath.isDefined) {
+      val klass = task.getClass
+      val simpleClassName = klass.getSimpleName + ".class"
+      val pathToClass = klass.getResource(simpleClassName).getPath
+      val classPath = pathToClass.substring(0, pathToClass.lastIndexOf(klass.getName.replace('.', File.separatorChar)))
+      clientClassPath = Some(classPath)
+    }
     dcs.submit(task)
   }
 }
