@@ -25,14 +25,15 @@ class ServerCommunicatorThread(socket: Socket, computeService: DistributedComput
             case IdentifiableTask(task, id) =>
               logger.debug("responding with task")
               (new PingProtocol(socket.getInputStream, socket.getOutputStream))
-                .respondTask(RequestedTask(id, getObjectBytes(task)))
+                .respondTask(RequestedTask(id, ObjectToBytes.getObjectBytes(task)))
           }
         case TaskResponseProtocol.id =>
           logger.debug("got task response")
           val (taskID, answer) = (new TaskResponseProtocol(socket.getInputStream, socket.getOutputStream)).getAnswer
           computeService ! Answer(taskID, answer)
         case ClassRequestProtocol.id =>
-          (new ClassRequestProtocol(socket.getInputStream, socket.getOutputStream)).respondClassBytes(getClassBytes)
+          (new ClassRequestProtocol(socket.getInputStream, socket.getOutputStream))
+            .respondClassBytes(ObjectToBytes.getClassBytes)
         case id: String => throw new Exception("error: unknown id " + id)
         case _ => throw new Exception("communication error")
       }
@@ -46,25 +47,5 @@ class ServerCommunicatorThread(socket: Socket, computeService: DistributedComput
     } finally {
       socket.close()
     }
-  }
-
-  // TODO move these methods elsewhere
-  private def getClassBytes(name: String): Array[Byte] = {
-    // TODO hard-coded path
-    val classRoot = "/home/yassen/projects/thesis/dcs/test_client/target/classes"
-    val fileName = classRoot + File.separatorChar + name.replace('.', File.separatorChar) + ".class"
-    val inFile = new FileInputStream(fileName)
-    val classBytes = new Array[Byte](inFile.available)
-    inFile.read(classBytes)
-    classBytes
-  }
-
-  private def getObjectBytes(o: Serializable): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    ClosableContext(new ObjectOutputStream(baos)){(oos) =>
-      oos.writeObject(o)
-    }
-
-    baos.toByteArray
   }
 }
