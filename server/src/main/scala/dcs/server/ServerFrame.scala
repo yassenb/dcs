@@ -3,9 +3,10 @@ package dcs.server
 import swing._
 import Swing._
 import event.ButtonClicked
+import dcs.common.Logging
 
 class ServerFrame(applicationState: ApplicationState = new ApplicationState)
-    extends MainFrame with StateEventSubscriber {
+    extends MainFrame with StateEventSubscriber with Logging {
   // initialize the label with some text otherwise for some reason it doesn't take up space when doing the layout
   private val state = new Label(" ")
 
@@ -78,7 +79,12 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState)
   }
 
   override def closeOperation() {
-    applicationState.save()
+    try {
+      applicationState.save()
+    } catch {
+      case _ =>
+        logger.error("could not save configuraion", _)
+    }
     super.closeOperation()
   }
 }
