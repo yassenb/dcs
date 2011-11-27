@@ -18,6 +18,7 @@
     <maven.compiler.target>1.5</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <scala.version>2.9.0-1</scala.version>
+    <junit.version>4.8.1</junit.version>
     <appassembler.version>1.1.1</appassembler.version>
     <common.version>1.0-SNAPSHOT</common.version>
     <client.version>1.0-SNAPSHOT</client.version>
@@ -53,7 +54,7 @@
         <dependency>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
-          <version>4.8.1</version>
+          <version>${junit.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -140,6 +141,68 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>Java Project</id>
+      <activation>
+        <file>
+          <exists>src/main/java</exists>
+        </file>
+      </activation>
+
+      <dependencies>
+        <!-- Test -->
+        <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <version>${junit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    
+      <build>
+        <!-- TODO move common maven versions to variables -->
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>2.3.1</version>
+            <configuration>
+              <archive>
+                <addMavenDescriptor>false</addMavenDescriptor>
+              </archive>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>2.3.2</version>
+            <executions>
+              <execution>
+                <phase>compile</phase>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.6</version>
+            <configuration>
+              <useFile>false</useFile>
+              <disableXmlReport>true</disableXmlReport>
+              <!-- If you have classpath issue like NoDefClassError,... -->
+              <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
+              <includes>
+                <include>**/*Test.*</include>
+                <include>**/*Suite.*</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <modules>
@@ -148,5 +211,6 @@
     <module>client</module>
     <module>test_client</module>
     <module>sleeping_client</module>
+    <module>cod</module>
   </modules>
 </project>
