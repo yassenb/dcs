@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 class CodParameters {
+    private int numberOfGenes;
     private int maxPredictors;
     private int targetGene;
     private DistributionRow[] distribution;
@@ -33,10 +34,15 @@ class CodParameters {
         double probability;
     }
 
-    CodParameters(int maxPredictors, int targetGene, DistributionRow[] distribution) {
+    CodParameters(int numberOfGenes, int maxPredictors, int targetGene, DistributionRow[] distribution) {
+        this.numberOfGenes = numberOfGenes;
         this.maxPredictors = maxPredictors;
         this.targetGene = targetGene;
         this.distribution = distribution;
+    }
+
+    int getNumberOfGenes() {
+        return numberOfGenes;
     }
 
     int getMaxPredictors() {
@@ -60,6 +66,9 @@ class CodParameters {
 
         input.mark(1024);
         int numberOfGenes = (input.readLine().split(separator).length - 1) / 2;
+        if (numberOfGenes > 30) {
+            throw new OutOfMemoryError("too many genes to fit into memory");
+        }
         input.reset();
 
         int combinations = (int) Math.pow(2, numberOfGenes);
@@ -79,6 +88,6 @@ class CodParameters {
         }
         assert input.readLine() == null;
 
-        return new CodParameters(maxPredictors, targetGene, distribution);
+        return new CodParameters(numberOfGenes, maxPredictors, targetGene, distribution);
     }
 }
