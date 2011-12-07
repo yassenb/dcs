@@ -1,13 +1,17 @@
 package dcs.cod;
 
+import java.util.BitSet;
+import java.util.List;
+
 class BitUtilities {
-    static int bitsToInteger(boolean[] bits) {
-        int result = 0;
-        for (boolean bit : bits) {
-            result <<= 1;
-            if (bit) {
-                ++result;
-            }
+    /**
+     * @param indexes
+     * @return a {@link BitSet} with all bits at positions in <code>indexes</code> set
+     */
+    static BitSet indexesToBitSet(List<Integer> indexes) {
+        BitSet result = new BitSet();
+        for (int i : indexes) {
+            result.set(i);
         }
         return result;
     }

@@ -4,19 +4,26 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 import dcs.cod.CodParameters.DistributionRow;
 
 public class CodSequential {
     private static class Transition {
-        Transition(boolean isTargetGeneExpressed, double probability) {
+        private BitSet state;
+        private boolean isTargetGeneExpressed;
+        private double probability;
+
+        Transition(BitSet state, boolean isTargetGeneExpressed, double probability) {
+            this.state = state;
             this.isTargetGeneExpressed = isTargetGeneExpressed;
             this.probability = probability;
         }
 
-        private boolean isTargetGeneExpressed;
-        private double probability;
+        BitSet getState() {
+            return state;
+        }
 
         boolean isTargetGeneExpressed() {
             return isTargetGeneExpressed;
@@ -69,7 +76,7 @@ public class CodSequential {
         List<Integer> bestCodCombination = null;
         List<Integer> combination;
         while ((combination = combinationsGenerator.next()) != null) {
-            double cod = getCod(combination, transitions);
+            double cod = getCod(BitUtilities.indexesToBitSet(combination), transitions);
             if (cod > bestCod) {
                 bestCod = cod;
                 bestCodCombination = combination;
@@ -78,7 +85,7 @@ public class CodSequential {
         return new CodForCombination(bestCodCombination, bestCod);
     }
 
-    private double getCod(List<Integer> combination, Transition[] transitions) {
+    private double getCod(BitSet predictors, Transition[] transitions) {
         // TODO
         return 0;
     }
@@ -94,13 +101,12 @@ public class CodSequential {
     }
 
     private Transition[] getTransitions(CodParameters parameters) {
-        DistributionRow[] distribution = parameters.getDistribution();
-        int transtionsSize = parameters.getDistribution().length;
-        Transition[] transitions = new Transition[transtionsSize];
-        for (int i = 0; i < transtionsSize; ++i) {
-            DistributionRow d = distribution[i];
-            transitions[BitUtilities.bitsToInteger(d.getState())] =
-                    new Transition(d.getNextState()[parameters.getTargetGene()], d.getProbability());
+        List<DistributionRow> distribution = parameters.getDistribution();
+        Transition[] transitions = new Transition[distribution.size()];
+        for (int i = 0; i < distribution.size(); ++i) {
+            DistributionRow d = distribution.get(i);
+            transitions[i] =
+                    new Transition(d.getState(), d.getNextState().get(parameters.getTargetGene()), d.getProbability());
         }
         return transitions;
     }

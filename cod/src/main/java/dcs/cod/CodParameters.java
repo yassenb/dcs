@@ -3,38 +3,41 @@ package dcs.cod;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 
 class CodParameters {
     private int numberOfGenes;
     private int maxPredictors;
     private int targetGene;
-    private DistributionRow[] distribution;
+    private List<DistributionRow> distribution;
 
     static class DistributionRow {
-        DistributionRow(boolean[] state, boolean[] nextState, double probability) {
+        BitSet state;
+        BitSet nextState;
+        double probability;
+
+        DistributionRow(BitSet state, BitSet nextState, double probability) {
             this.state = state;
             this.nextState = nextState;
             this.probability = probability;
         }
 
-        boolean[] getState() {
+        BitSet getState() {
             return state;
         }
 
-        boolean[] getNextState() {
+        BitSet getNextState() {
             return nextState;
         }
 
         double getProbability() {
             return probability;
         }
-
-        boolean[] state;
-        boolean[] nextState;
-        double probability;
     }
 
-    CodParameters(int numberOfGenes, int maxPredictors, int targetGene, DistributionRow[] distribution) {
+    CodParameters(int numberOfGenes, int maxPredictors, int targetGene, List<DistributionRow> distribution) {
         this.numberOfGenes = numberOfGenes;
         this.maxPredictors = maxPredictors;
         this.targetGene = targetGene;
@@ -53,7 +56,7 @@ class CodParameters {
         return targetGene;
     }
 
-    DistributionRow[] getDistribution() {
+    List<DistributionRow> getDistribution() {
         return distribution;
     }
 
@@ -66,27 +69,23 @@ class CodParameters {
 
         input.mark(1024);
         int numberOfGenes = (input.readLine().split(separator).length - 1) / 2;
-        if (numberOfGenes > 30) {
-            throw new OutOfMemoryError("too many genes to fit into memory");
-        }
         input.reset();
 
-        int combinations = (int) Math.pow(2, numberOfGenes);
-        DistributionRow[] distribution = new DistributionRow[combinations];
-        for (int i = 0; i < combinations; ++i) {
-            String[] row = input.readLine().split(separator);
-            boolean[] state = new boolean[numberOfGenes];
-            for (int j = 0; j < numberOfGenes; ++j) {
-                state[j] = Integer.parseInt(row[j]) != 0;
+        List<DistributionRow> distribution = new ArrayList<DistributionRow>();
+        String line;
+        while ((line = input.readLine()) != null) {
+            String[] row = line.split(separator);
+            BitSet state = new BitSet(numberOfGenes);
+            for (int i = 0; i < numberOfGenes; ++i) {
+                state.set(i, Integer.parseInt(row[i]) != 0);
             }
-            boolean[] nextState = new boolean[numberOfGenes];
-            for (int j = 0; j < numberOfGenes; ++j) {
-                nextState[j] = Integer.parseInt(row[numberOfGenes + j]) != 0;
+            BitSet nextState = new BitSet(numberOfGenes);
+            for (int i = 0; i < numberOfGenes; ++i) {
+                nextState.set(i, Integer.parseInt(row[numberOfGenes + i]) != 0);
             }
             double probability = Double.parseDouble(row[2 * numberOfGenes]);
-            distribution[i] = new DistributionRow(state, nextState, probability);
+            distribution.add(new DistributionRow(state, nextState, probability));
         }
-        assert input.readLine() == null;
 
         return new CodParameters(numberOfGenes, maxPredictors, targetGene, distribution);
     }

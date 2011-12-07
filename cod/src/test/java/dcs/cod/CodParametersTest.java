@@ -1,10 +1,12 @@
 package dcs.cod;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -22,31 +24,21 @@ public class CodParametersTest {
         CodParameters codParameters = CodParameters.parse(new StringReader(input));
         assertEquals(2, codParameters.getMaxPredictors());
         assertEquals(1, codParameters.getTargetGene());
-        DistributionRow[] distribution = codParameters.getDistribution();
-        assertArrayEquals(distribution[0].getState(), new boolean[] { false, false });
-        assertArrayEquals(distribution[0].getNextState(), new boolean[] { false, true });
-        assertEquals(distribution[0].getProbability(), 0.25, 0);
+        List<DistributionRow> distribution = codParameters.getDistribution();
+        assertEquals(getBitSet(), distribution.get(0).getState());
+        assertEquals(getBitSet(1), distribution.get(0).getNextState());
+        assertEquals(0.25, distribution.get(0).getProbability(), 0);
 
-        assertArrayEquals(distribution[1].getState(), new boolean[] { false, true });
-        assertArrayEquals(distribution[1].getNextState(), new boolean[] { false, true });
-        assertEquals(distribution[1].getProbability(), 0.013, 0);
+        assertEquals(getBitSet(1), distribution.get(1).getState());
+        assertEquals(getBitSet(1), distribution.get(1).getNextState());
+        assertEquals(0.013, distribution.get(1).getProbability(), 0);
 
-        assertArrayEquals(distribution[3].getState(), new boolean[] { true, true });
-        assertArrayEquals(distribution[3].getNextState(), new boolean[] { true, true });
-        assertEquals(distribution[3].getProbability(), 0.637, 0);
+        assertEquals(getBitSet(0, 1), distribution.get(3).getState());
+        assertEquals(getBitSet(0, 1), distribution.get(3).getNextState());
+        assertEquals(0.637, distribution.get(3).getProbability(), 0);
     }
 
-    /**
-     * Oh, JUnit, JUnit, how hard you suck
-     * @param expecteds
-     * @param actuals
-     */
-    private static void assertArrayEquals(boolean[] expecteds, boolean[] actuals) {
-        assertEquals("arrays are of different length", expecteds.length, actuals.length);
-        for (int i = 0; i < expecteds.length; ++i) {
-            if (expecteds[i] != actuals[i]) {
-                fail("arrays differ");
-            }
-        }
+    private BitSet getBitSet(Integer ... indexes) {
+        return BitUtilities.indexesToBitSet(Arrays.<Integer>asList(indexes));
     }
 }
