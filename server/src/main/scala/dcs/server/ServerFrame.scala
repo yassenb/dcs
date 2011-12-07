@@ -83,7 +83,7 @@ class ServerFrame(applicationState: ApplicationState = new ApplicationState)
       applicationState.save()
     } catch {
       case _ =>
-        logger.error("could not save configuraion", _)
+        logger.error("could not save configuraion", _: Throwable)
     }
     super.closeOperation()
   }
