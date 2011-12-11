@@ -10,7 +10,7 @@ import java.util.List;
 import dcs.cod.CodParameters.DistributionRow;
 
 public class CodSequential {
-    private static class Transition {
+    static class Transition {
         private BitSet state;
         private boolean isTargetGeneExpressed;
         private double probability;
@@ -75,19 +75,15 @@ public class CodSequential {
         double bestCod = 0;
         List<Integer> bestCodCombination = null;
         List<Integer> combination;
+        CodAlgorithm algorithm = new CodAlgorithm(transitions);
         while ((combination = combinationsGenerator.next()) != null) {
-            double cod = getCod(BitUtilities.indexesToBitSet(combination), transitions);
+            double cod = algorithm.getCod(BitUtilities.indexesToBitSet(combination));
             if (cod > bestCod) {
                 bestCod = cod;
                 bestCodCombination = combination;
             }
         }
         return new CodForCombination(bestCodCombination, bestCod);
-    }
-
-    private double getCod(BitSet predictors, Transition[] transitions) {
-        // TODO
-        return 0;
     }
 
     private List<Integer> getAllButTargetGene(CodParameters parameters) {
