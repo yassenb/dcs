@@ -59,7 +59,18 @@ public class CodSequential {
 
     public static void main(String args[]) {
         try {
-            boolean tryLessPredictors = Boolean.parseBoolean(args[1]);
+            if (args.length < 1 || args.length > 3) {
+                System.out.println("Usage: dcs-cod input_file [try_less_predictors]\n" +
+                                   "  input_file - path to a file containing data in the format described in " +
+                                       "input-format.txt\n" +
+                                   "  try_less_predictors - \"true\" if you want to also try and find the best CoD " +
+                                       "with less than the specified number of predictors");
+                return;
+            }
+            boolean tryLessPredictors = false;
+            if (args.length > 1) {
+                 tryLessPredictors = Boolean.parseBoolean(args[1]);
+            }
             CodForCombination bestCod =
                     (new CodSequential()).computeBestCod(new FileReader(args[0]), tryLessPredictors);
             System.out.println(String.format("The best CoD is for %s", bestCod));
