@@ -9,12 +9,9 @@ class CombinationsGenerator<T> {
     private int[] currentCombination;
     private boolean noMoreCombinations;
 
-    CombinationsGenerator(List<T> objects, int combinationSize, boolean generateSmallerCombinations) {
+    CombinationsGenerator(List<T> objects, int combinationSize) {
         if (objects.size() < combinationSize) {
             throw new IllegalArgumentException("you can't pick more objects than you have at once");
-        }
-        if (generateSmallerCombinations) {
-            throw new RuntimeException("not implemented");
         }
 
         this.combinationSize = combinationSize;

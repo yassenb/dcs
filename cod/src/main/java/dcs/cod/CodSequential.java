@@ -59,28 +59,36 @@ public class CodSequential {
 
     public static void main(String args[]) {
         try {
-            CodForCombination bestCod = (new CodSequential()).computeBestCod(new FileReader(args[0]));
+            boolean tryLessPredictors = Boolean.parseBoolean(args[1]);
+            CodForCombination bestCod =
+                    (new CodSequential()).computeBestCod(new FileReader(args[0]), tryLessPredictors);
             System.out.println(String.format("The best CoD is for %s", bestCod));
         } catch (Exception e) {
             System.err.println("error: " + e.getMessage());
         }
     }
 
-    private CodForCombination computeBestCod(Reader input) throws IOException {
+    private CodForCombination computeBestCod(Reader input, boolean tryLessPredictors) throws IOException {
         CodParameters parameters = CodParameters.parse(input);
         Transition[] transitions = getTransitions(parameters);
-        CombinationsGenerator<Integer> combinationsGenerator =
-                new CombinationsGenerator<Integer>(
-                        getAllButTargetGene(parameters), parameters.getMaxPredictors(), false);
         double bestCod = 0;
         List<Integer> bestCodCombination = null;
-        List<Integer> combination;
         CodAlgorithm algorithm = new CodAlgorithm(transitions);
-        while ((combination = combinationsGenerator.next()) != null) {
-            double cod = algorithm.getCod(BitUtilities.indexesToBitSet(combination));
-            if (cod > bestCod) {
-                bestCod = cod;
-                bestCodCombination = combination;
+        int maxPredictors = parameters.getMaxPredictors();
+        int minPredictors = tryLessPredictors ? 1 : maxPredictors;
+        if (minPredictors < 1) {
+            minPredictors = 1;
+        }
+        for (int i = maxPredictors; i >= minPredictors; --i) {
+            CombinationsGenerator<Integer> combinationsGenerator =
+                    new CombinationsGenerator<Integer>(getAllButTargetGene(parameters), i);
+            List<Integer> combination;
+            while ((combination = combinationsGenerator.next()) != null) {
+                double cod = algorithm.getCod(BitUtilities.indexesToBitSet(combination));
+                if (cod > bestCod) {
+                    bestCod = cod;
+                    bestCodCombination = combination;
+                }
             }
         }
         return new CodForCombination(bestCodCombination, bestCod);

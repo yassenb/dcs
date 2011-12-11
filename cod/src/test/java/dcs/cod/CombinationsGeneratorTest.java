@@ -13,7 +13,7 @@ public class CombinationsGeneratorTest {
     @Test
     public void test3of4Integers() {
         CombinationsGenerator<Integer> generator =
-                new CombinationsGenerator<Integer>(Arrays.asList(1, 2, 3, 4), 3, false);
+                new CombinationsGenerator<Integer>(Arrays.asList(1, 2, 3, 4), 3);
         Set<Set<Integer>> combinations = new HashSet<Set<Integer>>();
         List<Integer> combination = null;
         while ((combination = generator.next()) != null) {
@@ -33,7 +33,7 @@ public class CombinationsGeneratorTest {
     @Test
     public void test4of8RepeatingIntegers() {
         CombinationsGenerator<Integer> generator =
-                new CombinationsGenerator<Integer>(Arrays.asList(1, 1, 1, 1, 2, 2, 2, 2), 4, false);
+                new CombinationsGenerator<Integer>(Arrays.asList(1, 1, 1, 1, 2, 2, 2, 2), 4);
         int numberOfCombinations = 0;
         while (generator.next() != null) {
             ++numberOfCombinations;
